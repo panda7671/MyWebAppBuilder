@@ -2,6 +2,32 @@
 
 자연어로 앱을 설명하면 기획서와 와이어프레임을 자동으로 생성해주는 웹 앱 빌더입니다.
 
+**배포 URL:** https://my-web-app-builder.vercel.app/
+
+---
+
+## 데모 확인 방법
+
+https://my-web-app-builder.vercel.app/ 에 접속해 아래 순서로 체험할 수 있습니다.
+
+1. "새 앱 만들기" 클릭
+2. 앱 설명 입력 (예: `우리 동네 주민들이 중고 물건을 사고팔 수 있는 앱을 만들고 싶어요`)
+3. 맞춤 질문 5개에 답변 입력
+4. 기획서 자동 생성 확인 (앱 이름, 핵심 기능, 기술 스택)
+5. 화면 목록에서 각 화면 클릭 → 와이어프레임 미리보기
+6. 새로고침 후 데이터가 유지되는지 확인
+
+### 배포 후 확인 체크리스트
+
+- [ ] 홈 화면 정상 로딩
+- [ ] "새 앱 만들기" → 입력 → 질문 → 기획서 전체 흐름 동작
+- [ ] 빈 답변 validation 에러 배너 노출
+- [ ] 기획서 인라인 편집 및 재생성 동작
+- [ ] 화면 목록 → 와이어프레임 미리보기 진입
+- [ ] 새로고침 후 localStorage 데이터 유지
+- [ ] 프로젝트 삭제 후 목록에서 제거
+- [ ] 모바일 뷰(375px) 레이아웃 깨짐 없음
+
 ---
 
 ## 주요 기능
@@ -205,14 +231,13 @@ src/lib/mock-ai.ts
 환경 변수: ANTHROPIC_API_KEY
 ```
 
-### 2. Vercel 배포
+### 2. Vercel 배포 (완료)
 
-```bash
-# Vercel CLI로 배포
-npx vercel
+배포 URL: https://my-web-app-builder.vercel.app/
 
-# AI 연동 후 환경 변수 설정
-# Vercel 대시보드 → Settings → Environment Variables → ANTHROPIC_API_KEY
+AI 연동 후 환경 변수 추가 필요:
+```
+Vercel 대시보드 → Settings → Environment Variables → ANTHROPIC_API_KEY
 ```
 
 ### 3. 자동화 테스트 추가
