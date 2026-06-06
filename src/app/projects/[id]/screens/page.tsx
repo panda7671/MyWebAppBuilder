@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
-import { generateScreens } from '@/lib/mock-ai'
+import { generateScreensAI } from '@/lib/ai-service'
 import ScreenCard from '@/components/screens/ScreenCard'
 import StepIndicator from '@/components/layout/StepIndicator'
 
@@ -11,14 +11,26 @@ export default function ScreensPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { project, loading, updateProject } = useProject(id)
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     if (!project) return
-    const screens = generateScreens(project)
-    updateProject((p) => ({ ...p, screens }))
+    if (project.screens.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGenerating(true)
+      generateScreensAI(project.plan)
+        .then((screens) => updateProject((p) => ({ ...p, screens })))
+        .finally(() => setGenerating(false))
+    }
   }, [project?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (loading) return null
+  if (loading || generating) {
+    return (
+      <main className="flex flex-1 items-center justify-center">
+        <p className="text-gray-400 text-sm animate-pulse">화면 목록을 생성하는 중…</p>
+      </main>
+    )
+  }
 
   if (!project) {
     return (

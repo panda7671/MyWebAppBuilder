@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
-import { generateQuestions } from '@/lib/mock-ai'
+import { generateQuestionsAI } from '@/lib/ai-service'
 import StepIndicator from '@/components/layout/StepIndicator'
 
 export default function QuestionsPage() {
@@ -12,19 +12,24 @@ export default function QuestionsPage() {
   const { project, loading, updateProject } = useProject(id)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [showError, setShowError] = useState(false)
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     if (!project) return
 
     if (project.qa.questions.length === 0) {
-      const questions = generateQuestions(project.input.description)
-      updateProject((p) => ({ ...p, qa: { questions } }))
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGenerating(true)
+      generateQuestionsAI(project.input.description)
+        .then((questions) => {
+          updateProject((p) => ({ ...p, qa: { questions } }))
+        })
+        .finally(() => setGenerating(false))
     } else {
       const initial: Record<string, string> = {}
       project.qa.questions.forEach((q) => {
         initial[q.id] = q.answer
       })
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAnswers(initial)
     }
   }, [project?.id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -53,7 +58,13 @@ export default function QuestionsPage() {
     router.push(`/projects/${id}/plan`)
   }
 
-  if (loading) return null
+  if (loading || generating) {
+    return (
+      <main className="flex flex-1 items-center justify-center">
+        <p className="text-gray-400 text-sm animate-pulse">질문을 생성하는 중…</p>
+      </main>
+    )
+  }
 
   if (!project) {
     return (

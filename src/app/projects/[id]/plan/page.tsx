@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
-import { generatePlan } from '@/lib/mock-ai'
+import { generatePlanAI } from '@/lib/ai-service'
 import PlanViewer from '@/components/plan/PlanViewer'
 import StepIndicator from '@/components/layout/StepIndicator'
 import { AppPlan } from '@/types'
@@ -12,13 +12,17 @@ export default function PlanPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { project, loading, updateProject } = useProject(id)
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     if (!project) return
     const isEmpty = !project.plan.appName
     if (isEmpty) {
-      const plan = generatePlan(project)
-      updateProject((p) => ({ ...p, plan }))
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGenerating(true)
+      generatePlanAI(project.input.description, project.qa)
+        .then((plan) => updateProject((p) => ({ ...p, plan })))
+        .finally(() => setGenerating(false))
     }
   }, [project?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -26,13 +30,24 @@ export default function PlanPage() {
     updateProject((p) => ({ ...p, plan }))
   }
 
-  function handleRegenerate() {
+  async function handleRegenerate() {
     if (!project) return
-    const plan = generatePlan(project)
-    updateProject((p) => ({ ...p, plan }))
+    setGenerating(true)
+    try {
+      const plan = await generatePlanAI(project.input.description, project.qa)
+      updateProject((p) => ({ ...p, plan }))
+    } finally {
+      setGenerating(false)
+    }
   }
 
-  if (loading) return null
+  if (loading || generating) {
+    return (
+      <main className="flex flex-1 items-center justify-center">
+        <p className="text-gray-400 text-sm animate-pulse">기획서를 생성하는 중…</p>
+      </main>
+    )
+  }
 
   if (!project) {
     return (
@@ -57,7 +72,8 @@ export default function PlanPage() {
         <div className="mt-2 flex justify-end">
           <button
             onClick={handleRegenerate}
-            className="text-xs text-gray-400 hover:text-indigo-500 transition-colors"
+            disabled={generating}
+            className="text-xs text-gray-400 hover:text-indigo-500 transition-colors disabled:opacity-40"
           >
             ↻ 기획서 재생성
           </button>
