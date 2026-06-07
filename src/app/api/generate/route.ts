@@ -3,10 +3,35 @@ import { AppPlan, QASession, Question, Screen } from '@/types'
 import { claudeGenerateQuestions, claudeGeneratePlan, claudeGenerateScreens } from '@/lib/claude'
 import { generateQuestions, generatePlan, generateScreens } from '@/lib/mock-ai'
 
+// Accepts both `coreFeatures`/`targetUser` (internal) and `features`/`targetUsers` (client-facing)
+type IncomingPlan = {
+  appName?: string
+  purpose?: string
+  targetUser?: string
+  targetUsers?: string
+  coreFeatures?: string[]
+  features?: string[]
+  techStack?: string[]
+}
+
 type GenerateRequest =
   | { action: 'questions'; payload: { description: string } }
   | { action: 'plan'; payload: { description: string; qa: QASession } }
-  | { action: 'screens'; payload: { plan: AppPlan } }
+  | { action: 'screens'; payload: { plan: IncomingPlan } }
+
+function normalizePlan(raw: IncomingPlan): AppPlan {
+  return {
+    appName: raw.appName ?? '',
+    purpose: raw.purpose ?? '',
+    targetUser: raw.targetUser ?? raw.targetUsers ?? '일반 사용자',
+    coreFeatures: Array.isArray(raw.coreFeatures)
+      ? raw.coreFeatures
+      : Array.isArray(raw.features)
+        ? raw.features
+        : [],
+    techStack: Array.isArray(raw.techStack) ? raw.techStack : [],
+  }
+}
 
 const hasApiKey = (): boolean =>
   typeof process.env.ANTHROPIC_API_KEY === 'string' &&
@@ -27,9 +52,19 @@ export async function POST(request: NextRequest) {
     switch (body.action) {
       case 'questions': {
         const { description } = body.payload
-        const questions: Question[] = useAI
-          ? await claudeGenerateQuestions(description).catch(() => generateQuestions(description))
-          : generateQuestions(description)
+        let questions: Question[]
+        if (useAI) {
+          try {
+            questions = await claudeGenerateQuestions(description)
+            console.log('[AI] Using Claude API: questions')
+          } catch {
+            console.log('[AI] Falling back to mock-ai: questions')
+            questions = generateQuestions(description)
+          }
+        } else {
+          console.log('[AI] Falling back to mock-ai: questions')
+          questions = generateQuestions(description)
+        }
         return NextResponse.json({ success: true, data: questions })
       }
 
@@ -45,14 +80,27 @@ export async function POST(request: NextRequest) {
           plan: { appName: '', purpose: '', targetUser: '', coreFeatures: [], techStack: [] },
           screens: [],
         }
-        const plan: AppPlan = useAI
-          ? await claudeGeneratePlan(description, qa).catch(() => generatePlan(stubProject))
-          : generatePlan(stubProject)
+        let plan: AppPlan
+        if (useAI) {
+          try {
+            plan = await claudeGeneratePlan(description, qa)
+            console.log('[AI] Using Claude API: plan')
+          } catch {
+            console.log('[AI] Falling back to mock-ai: plan')
+            plan = generatePlan(stubProject)
+          }
+        } else {
+          console.log('[AI] Falling back to mock-ai: plan')
+          plan = generatePlan(stubProject)
+        }
         return NextResponse.json({ success: true, data: plan })
       }
 
       case 'screens': {
-        const { plan } = body.payload
+        if (!body.payload?.plan) {
+          return NextResponse.json({ success: false, error: 'plan is required' }, { status: 400 })
+        }
+        const plan = normalizePlan(body.payload.plan)
         const stubProject = {
           id: '',
           createdAt: '',
@@ -63,9 +111,19 @@ export async function POST(request: NextRequest) {
           plan,
           screens: [],
         }
-        const screens: Screen[] = useAI
-          ? await claudeGenerateScreens(plan).catch(() => generateScreens(stubProject))
-          : generateScreens(stubProject)
+        let screens: Screen[]
+        if (useAI) {
+          try {
+            screens = await claudeGenerateScreens(plan)
+            console.log('[AI] Using Claude API: screens')
+          } catch {
+            console.log('[AI] Falling back to mock-ai: screens')
+            screens = generateScreens(stubProject)
+          }
+        } else {
+          console.log('[AI] Falling back to mock-ai: screens')
+          screens = generateScreens(stubProject)
+        }
         return NextResponse.json({ success: true, data: screens })
       }
 
