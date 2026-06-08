@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
-import StepIndicator from '@/components/layout/StepIndicator'
+import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 
 export default function InputPage() {
   const { id } = useParams<{ id: string }>()
@@ -35,7 +35,7 @@ export default function InputPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">
       <div className="w-full max-w-lg">
-        <StepIndicator currentStep={0} />
+        <ProjectPageHeader currentStep={0} />
 
         <h1 className="text-2xl font-bold text-gray-900 mb-2">어떤 앱을 만들고 싶나요?</h1>
         <p className="text-gray-500 mb-6 text-sm">
@@ -50,13 +50,7 @@ export default function InputPage() {
           className="w-full rounded-lg border border-gray-300 p-4 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
         />
 
-        <div className="mt-4 flex justify-between items-center">
-          <button
-            onClick={() => router.push('/')}
-            className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            ← 홈으로
-          </button>
+        <div className="mt-4 flex justify-end">
           <button
             onClick={handleNext}
             disabled={!description.trim()}

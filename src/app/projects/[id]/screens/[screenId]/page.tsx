@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
 import WireframeRenderer from '@/components/wireframe/WireframeRenderer'
-import StepIndicator from '@/components/layout/StepIndicator'
+import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 
 export default function WireframePage() {
   const { id, screenId } = useParams<{ id: string; screenId: string }>()
@@ -44,7 +44,7 @@ export default function WireframePage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">
       <div className="w-full max-w-lg">
-        <StepIndicator currentStep={4} />
+        <ProjectPageHeader currentStep={4} />
 
         <div className="mb-6">
           <div className="flex items-baseline gap-2 mb-1">

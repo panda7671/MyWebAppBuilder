@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
 import { generatePlanAI, UsageLimitError } from '@/lib/ai-service'
 import PlanViewer from '@/components/plan/PlanViewer'
-import StepIndicator from '@/components/layout/StepIndicator'
+import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 import { AppPlan } from '@/types'
 
 export default function PlanPage() {
@@ -75,7 +75,7 @@ export default function PlanPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">
       <div className="w-full max-w-lg">
-        <StepIndicator currentStep={2} />
+        <ProjectPageHeader currentStep={2} />
 
         <h1 className="text-2xl font-bold text-gray-900 mb-2">기획서가 완성됐어요</h1>
         <p className="text-gray-500 mb-6 text-sm">

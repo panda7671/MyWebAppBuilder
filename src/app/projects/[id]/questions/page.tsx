@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
 import { generateQuestionsAI, UsageLimitError } from '@/lib/ai-service'
-import StepIndicator from '@/components/layout/StepIndicator'
+import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 
 export default function QuestionsPage() {
   const { id } = useParams<{ id: string }>()
@@ -87,7 +87,7 @@ export default function QuestionsPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">
       <div className="w-full max-w-lg">
-        <StepIndicator currentStep={1} />
+        <ProjectPageHeader currentStep={1} />
 
         <h1 className="text-2xl font-bold text-gray-900 mb-2">조금 더 알려주세요</h1>
         <p className="text-gray-500 mb-8 text-sm">

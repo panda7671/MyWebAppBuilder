@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
 import { generateScreensAI, UsageLimitError } from '@/lib/ai-service'
 import ScreenCard from '@/components/screens/ScreenCard'
-import StepIndicator from '@/components/layout/StepIndicator'
+import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 
 export default function ScreensPage() {
   const { id } = useParams<{ id: string }>()
@@ -51,7 +51,7 @@ export default function ScreensPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">
       <div className="w-full max-w-lg">
-        <StepIndicator currentStep={3} />
+        <ProjectPageHeader currentStep={3} />
 
         <h1 className="text-2xl font-bold text-gray-900 mb-2">화면 목록</h1>
         <p className="text-gray-500 mb-6 text-sm">
