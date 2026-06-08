@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
-import { generatePlanAI } from '@/lib/ai-service'
+import { generatePlanAI, UsageLimitError } from '@/lib/ai-service'
 import PlanViewer from '@/components/plan/PlanViewer'
 import StepIndicator from '@/components/layout/StepIndicator'
 import { AppPlan } from '@/types'
@@ -13,6 +13,7 @@ export default function PlanPage() {
   const router = useRouter()
   const { project, loading, updateProject } = useProject(id)
   const [generating, setGenerating] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!project) return
@@ -22,6 +23,13 @@ export default function PlanPage() {
       setGenerating(true)
       generatePlanAI(project.input.description, project.qa)
         .then((plan) => updateProject((p) => ({ ...p, plan })))
+        .catch((err: unknown) => {
+          setAiError(
+            err instanceof UsageLimitError
+              ? err.message
+              : '기획서 생성 중 오류가 발생했어요. 다시 시도해주세요.'
+          )
+        })
         .finally(() => setGenerating(false))
     }
   }, [project?.id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -33,9 +41,16 @@ export default function PlanPage() {
   async function handleRegenerate() {
     if (!project) return
     setGenerating(true)
+    setAiError(null)
     try {
       const plan = await generatePlanAI(project.input.description, project.qa)
       updateProject((p) => ({ ...p, plan }))
+    } catch (err: unknown) {
+      setAiError(
+        err instanceof UsageLimitError
+          ? err.message
+          : '기획서 생성 중 오류가 발생했어요. 다시 시도해주세요.'
+      )
     } finally {
       setGenerating(false)
     }
@@ -66,6 +81,12 @@ export default function PlanPage() {
         <p className="text-gray-500 mb-6 text-sm">
           내용을 확인하고, 수정이 필요하면 직접 편집할 수 있어요.
         </p>
+
+        {aiError && (
+          <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            {aiError}
+          </div>
+        )}
 
         <PlanViewer plan={project.plan} onChange={handlePlanChange} />
 

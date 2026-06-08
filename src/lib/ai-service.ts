@@ -1,4 +1,7 @@
 import { AppPlan, QASession, Question, Screen } from '@/types'
+import { canCall, recordCall, UsageLimitError } from '@/lib/usage-limit'
+
+export { UsageLimitError }
 
 interface ApiResponse<T> {
   success: boolean
@@ -7,6 +10,8 @@ interface ApiResponse<T> {
 }
 
 async function callGenerate<T>(action: string, payload: Record<string, unknown>): Promise<T> {
+  if (!canCall()) throw new UsageLimitError()
+
   const res = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -23,6 +28,7 @@ async function callGenerate<T>(action: string, payload: Record<string, unknown>)
     throw new Error(json.error ?? 'Unknown API error')
   }
 
+  recordCall()
   return json.data
 }
 

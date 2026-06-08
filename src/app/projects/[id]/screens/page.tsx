@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
-import { generateScreensAI } from '@/lib/ai-service'
+import { generateScreensAI, UsageLimitError } from '@/lib/ai-service'
 import ScreenCard from '@/components/screens/ScreenCard'
 import StepIndicator from '@/components/layout/StepIndicator'
 
@@ -12,6 +12,7 @@ export default function ScreensPage() {
   const router = useRouter()
   const { project, loading, updateProject } = useProject(id)
   const [generating, setGenerating] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!project) return
@@ -20,6 +21,13 @@ export default function ScreensPage() {
       setGenerating(true)
       generateScreensAI(project.plan)
         .then((screens) => updateProject((p) => ({ ...p, screens })))
+        .catch((err: unknown) => {
+          setAiError(
+            err instanceof UsageLimitError
+              ? err.message
+              : '화면 목록 생성 중 오류가 발생했어요. 다시 시도해주세요.'
+          )
+        })
         .finally(() => setGenerating(false))
     }
   }, [project?.id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -49,6 +57,12 @@ export default function ScreensPage() {
         <p className="text-gray-500 mb-6 text-sm">
           기획서를 바탕으로 화면 목록을 구성했어요. 화면을 선택하면 와이어프레임을 볼 수 있어요.
         </p>
+
+        {aiError && (
+          <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            {aiError}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {project.screens.map((screen) => (

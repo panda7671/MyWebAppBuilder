@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
-import { generateQuestionsAI } from '@/lib/ai-service'
+import { generateQuestionsAI, UsageLimitError } from '@/lib/ai-service'
 import StepIndicator from '@/components/layout/StepIndicator'
 
 export default function QuestionsPage() {
@@ -13,6 +13,7 @@ export default function QuestionsPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [showError, setShowError] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!project) return
@@ -23,6 +24,13 @@ export default function QuestionsPage() {
       generateQuestionsAI(project.input.description)
         .then((questions) => {
           updateProject((p) => ({ ...p, qa: { questions } }))
+        })
+        .catch((err: unknown) => {
+          setAiError(
+            err instanceof UsageLimitError
+              ? err.message
+              : '질문 생성 중 오류가 발생했어요. 다시 시도해주세요.'
+          )
         })
         .finally(() => setGenerating(false))
     } else {
@@ -85,6 +93,12 @@ export default function QuestionsPage() {
         <p className="text-gray-500 mb-8 text-sm">
           질문에 많이 답할수록 내 앱과 더 잘 맞는 기획서가 나와요.
         </p>
+
+        {aiError && (
+          <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            {aiError}
+          </div>
+        )}
 
         {showError && (
           <div className="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
