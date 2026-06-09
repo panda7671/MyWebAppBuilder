@@ -70,13 +70,21 @@ export default function ScreensPage() {
           ))}
         </div>
 
-        <div className="mt-8 flex justify-start">
+        <div className="mt-8 space-y-3">
           <button
-            onClick={() => router.push(`/projects/${id}/plan`)}
-            className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            onClick={() => router.push(`/projects/${id}/preview`)}
+            className="w-full flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
           >
-            ← 이전
+            앱 미리보기 생성 →
           </button>
+          <div className="flex justify-start">
+            <button
+              onClick={() => router.push(`/projects/${id}/plan`)}
+              className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              ← 이전
+            </button>
+          </div>
         </div>
       </div>
     </main>

@@ -46,6 +46,10 @@ export interface AppPlan {
   techStack: string[]
 }
 
+import type { UISchema } from './ui-schema'
+
+export type { UISchema } from './ui-schema'
+
 export interface Project {
   id: string
   createdAt: string
@@ -55,4 +59,5 @@ export interface Project {
   qa: QASession
   plan: AppPlan
   screens: Screen[]
+  generatedApp?: UISchema
 }

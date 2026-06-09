@@ -6,6 +6,7 @@ import StepIndicator from '@/components/layout/StepIndicator'
 import { Project } from '@/types'
 
 function getProgress(project: Project): number {
+  if (project.generatedApp) return 5
   if (project.screens.length > 0) return 4
   if (project.plan.appName) return 3
   if (project.qa.questions.some((q) => q.answer)) return 2
@@ -15,20 +16,17 @@ function getProgress(project: Project): number {
 
 function getResumeHref(id: string, project: Project): string {
   const step = getProgress(project)
-  if (step === 4 && project.screens.length > 0) {
-    return `/projects/${id}/screens/${project.screens[0].id}`
-  }
+  if (step >= 4) return `/projects/${id}/preview`
   const hrefs = [
     `/projects/${id}/input`,
     `/projects/${id}/questions`,
     `/projects/${id}/plan`,
     `/projects/${id}/screens`,
-    `/projects/${id}/screens`,
   ]
   return hrefs[step]
 }
 
-const STEP_LABELS = ['앱 설명', '추가 질문', '기획서', '화면 목록', '와이어프레임']
+const STEP_LABELS = ['앱 설명', '추가 질문', '기획서', '화면 목록', '와이어프레임', '미리보기']
 
 const STATUS_CONFIG: Record<Project['status'], { label: string; cls: string }> = {
   draft: { label: '초안', cls: 'bg-gray-100 text-gray-500' },
@@ -95,11 +93,21 @@ export default function ProjectDetailPage() {
         project.screens.length > 0
           ? `/projects/${id}/screens/${project.screens[0].id}`
           : `/projects/${id}/screens`,
-      done: false,
+      done: project.screens.length > 0,
+    },
+    {
+      label: STEP_LABELS[5],
+      href: `/projects/${id}/preview`,
+      done: !!project.generatedApp,
     },
   ]
 
-  const resumeLabel = progress >= 4 ? '와이어프레임 보기' : `${STEP_LABELS[progress]} 계속하기`
+  const resumeLabel =
+    progress >= 5
+      ? '미리보기 보기'
+      : progress >= 4
+        ? '미리보기 생성'
+        : `${STEP_LABELS[progress]} 계속하기`
 
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">

@@ -1,6 +1,7 @@
 import 'server-only'
 import Anthropic from '@anthropic-ai/sdk'
-import { AppPlan, Question, Screen, QASession, UIComponentType } from '@/types'
+import { AppPlan, Question, Screen, QASession, UIComponentType, UISchema } from '@/types'
+import type { UISection, ThemeStyle } from '@/types/ui-schema'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -99,6 +100,72 @@ ${qaText}
     techStack: Array.isArray(parsed.techStack)
       ? (parsed.techStack as unknown[]).filter((t): t is string => typeof t === 'string')
       : [],
+  }
+}
+
+const VALID_APP_SECTION_TYPES = new Set(['Hero', 'CardGrid', 'Form', 'List', 'Detail', 'Chat'])
+
+export async function claudeGenerateApp(plan: AppPlan, screens: Screen[]): Promise<UISchema> {
+  const screenNames = screens.map((s) => s.name).join(', ')
+
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 2048,
+    system:
+      '당신은 앱 UI 전문가입니다. 기획서를 보고 UISchema JSON만 반환하세요. 코드나 다른 텍스트 없이 순수 JSON만 출력하세요.',
+    messages: [
+      {
+        role: 'user',
+        content: `앱 이름: "${plan.appName}"
+목적: "${plan.purpose}"
+타겟 유저: "${plan.targetUser}"
+핵심 기능: ${plan.coreFeatures.join(', ')}
+화면: ${screenNames || '없음'}
+
+아래 JSON UISchema를 생성하세요. sections의 type은 반드시 Hero, CardGrid, Form, List, Detail, Chat 중 하나여야 합니다:
+
+{
+  "appName": "앱이름",
+  "theme": {"primaryColor": "#4F46E5", "style": "minimal"},
+  "sections": [
+    {"type": "Hero", "title": "환영합니다", "subtitle": "앱 설명", "ctaText": "시작하기"},
+    {"type": "CardGrid", "title": "핵심 기능", "cards": [{"title": "기능명", "description": "설명", "badge": "추천"}]},
+    {"type": "List", "title": "최근 항목", "items": [{"title": "항목", "subtitle": "부제목", "meta": "시간", "badge": "NEW"}]},
+    {"type": "Form", "title": "시작하기", "fields": [{"label": "이름", "type": "text", "placeholder": "입력", "required": true}], "submitText": "제출"}
+  ]
+}`,
+      },
+    ],
+  })
+
+  const text = response.content[0].type === 'text' ? response.content[0].text : ''
+  // JSON.parse errors propagate to route.ts which falls back to mock
+  const parsed = JSON.parse(extractJson(text)) as Record<string, unknown>
+
+  const rawSections = Array.isArray(parsed.sections) ? parsed.sections : []
+  const sections = (rawSections as unknown[]).filter(
+    (s): s is UISection =>
+      typeof s === 'object' &&
+      s !== null &&
+      VALID_APP_SECTION_TYPES.has((s as Record<string, unknown>).type as string)
+  )
+
+  const rawTheme =
+    typeof parsed.theme === 'object' && parsed.theme !== null
+      ? (parsed.theme as Record<string, unknown>)
+      : {}
+
+  const VALID_STYLES = new Set<ThemeStyle>(['minimal', 'colorful', 'dark'])
+
+  return {
+    appName: typeof parsed.appName === 'string' ? parsed.appName : plan.appName,
+    theme: {
+      primaryColor: typeof rawTheme.primaryColor === 'string' ? rawTheme.primaryColor : '#4F46E5',
+      style: VALID_STYLES.has(rawTheme.style as ThemeStyle)
+        ? (rawTheme.style as ThemeStyle)
+        : 'minimal',
+    },
+    sections,
   }
 }
 

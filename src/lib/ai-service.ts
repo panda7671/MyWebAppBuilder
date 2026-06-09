@@ -1,4 +1,4 @@
-import { AppPlan, QASession, Question, Screen } from '@/types'
+import { AppPlan, QASession, Question, Screen, UISchema } from '@/types'
 import { canCall, recordCall, UsageLimitError } from '@/lib/usage-limit'
 
 export { UsageLimitError }
@@ -42,4 +42,8 @@ export function generatePlanAI(description: string, qa: QASession): Promise<AppP
 
 export function generateScreensAI(plan: AppPlan): Promise<Screen[]> {
   return callGenerate<Screen[]>('screens', { plan })
+}
+
+export function generateAppAI(plan: AppPlan, screens: Screen[]): Promise<UISchema> {
+  return callGenerate<UISchema>('app', { plan, screens })
 }

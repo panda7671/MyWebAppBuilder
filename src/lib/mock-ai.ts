@@ -1,4 +1,4 @@
-import { AppPlan, Project, Question, Screen, UIComponent } from '@/types'
+import { AppPlan, Project, Question, Screen, UIComponent, UISchema } from '@/types'
 
 const DOMAIN_PLACEHOLDERS: [string[], Record<string, string>][] = [
   [
@@ -419,6 +419,49 @@ export function generateScreens(project: Project): Screen[] {
 
   screens.push(SETTINGS_SCREEN)
   return screens
+}
+
+export function generateApp(plan: AppPlan): UISchema {
+  const features = plan.coreFeatures.slice(0, 4)
+  const cards =
+    features.length > 0
+      ? features.map((f) => ({ title: f, description: `${plan.appName}의 핵심 기능입니다.` }))
+      : [
+          { title: '기능 1', description: '주요 기능을 소개합니다.' },
+          { title: '기능 2', description: '편리한 기능을 제공합니다.' },
+        ]
+
+  return {
+    appName: plan.appName,
+    theme: { primaryColor: '#4F46E5', style: 'minimal' },
+    sections: [
+      {
+        type: 'Hero',
+        title: `${plan.appName}에 오신 것을 환영합니다`,
+        subtitle: plan.purpose,
+        ctaText: '시작하기',
+      },
+      { type: 'CardGrid', title: '핵심 기능', cards },
+      {
+        type: 'List',
+        title: '최근 활동',
+        items: [
+          { title: '새 항목이 추가되었습니다', meta: '방금 전', badge: 'NEW' },
+          { title: '업데이트가 완료되었습니다', meta: '1시간 전' },
+          { title: '알림이 도착했습니다', meta: '어제' },
+        ],
+      },
+      {
+        type: 'Form',
+        title: '시작하기',
+        fields: [
+          { label: '이름', type: 'text', placeholder: '이름을 입력하세요', required: true },
+          { label: '이메일', type: 'email', placeholder: '이메일을 입력하세요', required: true },
+        ],
+        submitText: '가입하기',
+      },
+    ],
+  }
 }
 
 export function generatePlan(project: Project): AppPlan {
