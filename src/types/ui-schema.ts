@@ -17,7 +17,7 @@ export interface CardGridSection {
   cards: CardItem[]
 }
 
-export type FormFieldType = 'text' | 'email' | 'textarea' | 'select'
+export type FormFieldType = 'text' | 'email' | 'textarea' | 'select' | 'toggle'
 
 export interface FormField {
   label: string

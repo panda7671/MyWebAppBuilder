@@ -30,7 +30,7 @@ export async function claudeGenerateQuestions(description: string): Promise<Ques
 - q1: 타겟 유저 (누가 사용?)
 - q2: 핵심 기능 (가장 중요한 기능?)
 - q3: 메인 화면 (처음에 무엇을 보여줄까?)
-- q4: 사용 기기 (스마트폰/컴퓨터/둘 다?)
+- q4: 주요 행동 (사용자가 앱에서 가장 자주 할 행동?)
 - q5: 앱 분위기 (톤앤매너?)
 
 형식:
@@ -38,7 +38,7 @@ export async function claudeGenerateQuestions(description: string): Promise<Ques
   {"id":"q1","text":"질문 내용","answer":"","placeholder":"예: 예시 답변"},
   {"id":"q2","text":"질문 내용","answer":"","placeholder":"예: 예시 답변"},
   {"id":"q3","text":"질문 내용","answer":"","placeholder":"예: 예시 답변"},
-  {"id":"q4","text":"질문 내용","answer":"","placeholder":"예: 스마트폰, 컴퓨터, 또는 둘 다"},
+  {"id":"q4","text":"질문 내용","answer":"","placeholder":"예: 물건 올리기, 예약하기, 기록 추가하기, 채팅하기"},
   {"id":"q5","text":"질문 내용","answer":"","placeholder":"예: 심플하고 깔끔한"}
 ]`,
       },

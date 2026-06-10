@@ -7,7 +7,7 @@ const DOMAIN_PLACEHOLDERS: [string[], Record<string, string>][] = [
       q1: '예: 20~40대 일반인, 동네 주민',
       q2: '예: 사진을 올려서 중고 물건 팔기',
       q3: '예: 내 주변 중고 물건 목록',
-      q4: '예: 스마트폰',
+      q4: '예: 물건 사진 올리기, 채팅하기',
       q5: '예: 깔끔하고 신뢰감 있는',
     },
   ],
@@ -17,7 +17,7 @@ const DOMAIN_PLACEHOLDERS: [string[], Record<string, string>][] = [
       q1: '예: 음식에 관심 많은 20~30대',
       q2: '예: 가까운 맛집을 지도에서 찾기',
       q3: '예: 내 주변 인기 맛집 지도',
-      q4: '예: 스마트폰',
+      q4: '예: 맛집 검색하기, 리뷰 남기기',
       q5: '예: 따뜻하고 식욕 돋는',
     },
   ],
@@ -27,7 +27,7 @@ const DOMAIN_PLACEHOLDERS: [string[], Record<string, string>][] = [
       q1: '예: 건강 관리에 관심 있는 직장인',
       q2: '예: 매일 운동 기록하고 목표 달성 확인',
       q3: '예: 오늘 운동 요약과 달성률',
-      q4: '예: 스마트폰',
+      q4: '예: 운동 기록 추가하기, 목표 확인하기',
       q5: '예: 활기차고 동기부여 되는',
     },
   ],
@@ -37,7 +37,7 @@ const DOMAIN_PLACEHOLDERS: [string[], Record<string, string>][] = [
       q1: '예: 자격증 준비 중인 학생, 직장인',
       q2: '예: 강의 듣고 퀴즈로 복습하기',
       q3: '예: 오늘 학습 진도와 이어서 볼 강의',
-      q4: '예: 스마트폰과 컴퓨터 둘 다',
+      q4: '예: 강의 듣기, 퀴즈 풀기',
       q5: '예: 집중력 있고 차분한',
     },
   ],
@@ -47,7 +47,7 @@ const DOMAIN_PLACEHOLDERS: [string[], Record<string, string>][] = [
       q1: '예: 바쁜 일상을 관리하고 싶은 직장인',
       q2: '예: 일정 추가하고 알림 받기',
       q3: '예: 오늘 일정 한눈에 보기',
-      q4: '예: 스마트폰',
+      q4: '예: 일정 추가하기, 알림 설정하기',
       q5: '예: 정돈되고 효율적인',
     },
   ],
@@ -57,7 +57,7 @@ const DOMAIN_PLACEHOLDERS: [string[], Record<string, string>][] = [
       q1: '예: 소비를 줄이고 싶은 20~30대',
       q2: '예: 지출 기록하고 월별 통계 보기',
       q3: '예: 이번 달 지출 요약',
-      q4: '예: 스마트폰',
+      q4: '예: 지출 기록하기, 통계 확인하기',
       q5: '예: 신뢰감 있고 깔끔한',
     },
   ],
@@ -67,7 +67,7 @@ const DOMAIN_PLACEHOLDERS: [string[], Record<string, string>][] = [
       q1: '예: 같은 동네에 사는 주민',
       q2: '예: 동네 소식과 이웃끼리 소통',
       q3: '예: 우리 동네 최신 게시글',
-      q4: '예: 스마트폰',
+      q4: '예: 게시글 작성하기, 댓글 달기',
       q5: '예: 따뜻하고 친근한',
     },
   ],
@@ -77,7 +77,7 @@ const DEFAULT_PLACEHOLDERS: Record<string, string> = {
   q1: '예: 학생, 직장인, 소상공인 등',
   q2: '예: 사용자가 가장 많이 쓰는 핵심 기능',
   q3: '예: 메인 콘텐츠 목록 또는 대시보드',
-  q4: '예: 스마트폰, 컴퓨터, 또는 둘 다',
+  q4: '예: 물건 올리기, 예약하기, 기록 추가하기, 채팅하기',
   q5: '예: 심플, 귀여움, 전문적',
 }
 
@@ -111,7 +111,7 @@ export function generateQuestions(description: string): Question[] {
     },
     {
       id: 'q4',
-      text: '앱을 주로 어떤 기기에서 사용할 예정인가요?',
+      text: '사용자가 앱에서 가장 자주 할 행동은 무엇인가요?',
       answer: '',
       placeholder: placeholders.q4,
     },
@@ -220,21 +220,6 @@ const FEATURE_MAP: [string[], string][] = [
   [['친구', '팔로우', '팔로워'], '소셜 기능'],
 ]
 
-const TECH_MAP: [string[], string[]][] = [
-  [
-    ['모바일', '스마트폰', '핸드폰'],
-    ['React Native', 'Expo', 'Firebase'],
-  ],
-  [
-    ['컴퓨터', '웹', 'PC', '브라우저'],
-    ['Next.js', 'React', 'Tailwind CSS'],
-  ],
-  [
-    ['둘 다', '모두', '양쪽'],
-    ['Next.js', 'React Native', 'Firebase'],
-  ],
-]
-
 function extractFeatures(text: string): string[] {
   const features: string[] = []
   for (const [keywords, feature] of FEATURE_MAP) {
@@ -245,13 +230,6 @@ function extractFeatures(text: string): string[] {
   }
   if (features.length < 3) features.push('메인 대시보드', '개인 설정')
   return features.slice(0, 5)
-}
-
-function extractTechStack(deviceAnswer: string): string[] {
-  for (const [keywords, stack] of TECH_MAP) {
-    if (keywords.some((k) => deviceAnswer.includes(k))) return stack
-  }
-  return ['Next.js', 'React', 'Tailwind CSS']
 }
 
 // ─── Screen generation ───────────────────────────────────────────────────────
@@ -478,6 +456,6 @@ export function generatePlan(project: Project): AppPlan {
     purpose: desc.length > 80 ? desc.slice(0, 80).trimEnd() + '…' : desc,
     targetUser: answers['q1'] || '일반 사용자',
     coreFeatures: extractFeatures(combined),
-    techStack: extractTechStack(answers['q4'] || ''),
+    techStack: ['React', 'Next.js', 'Tailwind CSS'],
   }
 }
