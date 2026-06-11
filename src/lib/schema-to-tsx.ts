@@ -1,0 +1,667 @@
+import type {
+  UISchema,
+  UISection,
+  HeroSection,
+  CardGridSection,
+  FormSection,
+  ListSection,
+  DetailSection,
+  ChatSection,
+} from '@/types/ui-schema'
+
+function toComponentName(name: string): string {
+  const cleaned = name.replace(/[^a-zA-Z0-9]/g, '')
+  return (/^\d/.test(cleaned) ? 'App' + cleaned : cleaned) || 'GeneratedApp'
+}
+
+// Wraps a user string as a safe JSX text expression e.g. {"hello"}
+function jxt(s: string): string {
+  return `{${JSON.stringify(s)}}`
+}
+
+type SectionCode = {
+  constDecl: string | null
+  componentDecl: string
+  componentName: string
+}
+
+// ─── Hero ────────────────────────────────────────────────────────────────────
+
+function heroCode(s: HeroSection, idx: number): SectionCode {
+  const componentName = `Section${idx}_Hero`
+  const lines: string[] = [
+    `function ${componentName}() {`,
+    '  return (',
+    '    <section',
+    '      style={{',
+    "        background: 'linear-gradient(135deg, ' + PRIMARY_COLOR + ' 0%, ' + PRIMARY_COLOR + \"cc 100%)',",
+    '        borderRadius: 16,',
+    '        padding: 28,',
+    "        textAlign: 'center',",
+    '      }}',
+    '    >',
+    "      <h2 style={{ color: 'white', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>",
+    `        ${jxt(s.title || '환영합니다')}`,
+    '      </h2>',
+  ]
+
+  if (s.subtitle) {
+    lines.push(
+      "      <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, margin: '0 0 16px' }}>",
+      `        ${jxt(s.subtitle)}`,
+      '      </p>'
+    )
+  }
+
+  if (s.ctaText) {
+    lines.push(
+      '      <button',
+      "        onClick={() => alert('시작합니다!')}",
+      '        style={{',
+      "          background: 'white',",
+      '          color: PRIMARY_COLOR,',
+      "          border: 'none',",
+      '          borderRadius: 9999,',
+      "          padding: '10px 32px',",
+      '          fontSize: 14,',
+      '          fontWeight: 700,',
+      "          cursor: 'pointer',",
+      '        }}',
+      '      >',
+      `        ${jxt(s.ctaText)}`,
+      '      </button>'
+    )
+  }
+
+  lines.push('    </section>', '  )', '}')
+  return { constDecl: null, componentDecl: lines.join('\n'), componentName }
+}
+
+// ─── CardGrid ─────────────────────────────────────────────────────────────────
+
+function cardGridCode(s: CardGridSection, idx: number): SectionCode {
+  const componentName = `Section${idx}_CardGrid`
+  const constName = `CARDS_${idx}`
+  const constDecl = `const ${constName}: Array<{ title: string; description?: string; badge?: string }> = ${JSON.stringify(s.cards ?? [], null, 2)}`
+
+  const lines: string[] = [
+    `function ${componentName}() {`,
+    '  const [selectedIdx, setSelectedIdx] = useState<number | null>(null)',
+    '  return (',
+    '    <section>',
+  ]
+
+  if (s.title) {
+    lines.push(
+      "      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#374151', margin: '0 0 12px 4px' }}>",
+      `        ${jxt(s.title)}`,
+      '      </h3>'
+    )
+  }
+
+  lines.push(
+    "      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>",
+    `        {${constName}.map((card, i) => (`,
+    '          <button',
+    '            key={i}',
+    '            onClick={() => setSelectedIdx(i === selectedIdx ? null : i)}',
+    '            style={{',
+    "              background: 'white',",
+    '              borderRadius: 12,',
+    '              padding: 16,',
+    "              textAlign: 'left',",
+    "              width: '100%',",
+    "              cursor: 'pointer',",
+    "              border: i === selectedIdx ? `2px solid ${PRIMARY_COLOR}` : '1px solid #f3f4f6',",
+    '              boxShadow: i === selectedIdx',
+    '                ? `0 0 0 3px ${PRIMARY_COLOR}30`',
+    "                : '0 1px 3px rgba(0,0,0,0.06)',",
+    '            }}',
+    '          >',
+    '            {card.badge && (',
+    '              <span',
+    '                style={{',
+    '                  color: PRIMARY_COLOR,',
+    "                  background: PRIMARY_COLOR + '18',",
+    '                  fontSize: 10,',
+    '                  fontWeight: 600,',
+    "                  padding: '2px 8px',",
+    '                  borderRadius: 9999,',
+    "                  display: 'inline-block',",
+    '                  marginBottom: 8,',
+    '                }}',
+    '              >',
+    '                {card.badge}',
+    '              </span>',
+    '            )}',
+    "            <p style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', margin: '0 0 4px' }}>",
+    '              {card.title}',
+    '            </p>',
+    '            {card.description && (',
+    "              <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>{card.description}</p>",
+    '            )}',
+    '          </button>',
+    '        ))}',
+    '      </div>',
+    '    </section>',
+    '  )',
+    '}'
+  )
+
+  return { constDecl, componentDecl: lines.join('\n'), componentName }
+}
+
+// ─── List ─────────────────────────────────────────────────────────────────────
+
+function listCode(s: ListSection, idx: number): SectionCode {
+  const componentName = `Section${idx}_List`
+  const constName = `LIST_ITEMS_${idx}`
+  const constDecl = `const ${constName}: Array<{ title: string; subtitle?: string; meta?: string; badge?: string }> = ${JSON.stringify(s.items ?? [], null, 2)}`
+
+  const lines: string[] = [
+    `function ${componentName}() {`,
+    '  const [selectedIdx, setSelectedIdx] = useState<number | null>(null)',
+    '  return (',
+    '    <section>',
+  ]
+
+  if (s.title) {
+    lines.push(
+      "      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#374151', margin: '0 0 12px 4px' }}>",
+      `        ${jxt(s.title)}`,
+      '      </h3>'
+    )
+  }
+
+  lines.push(
+    '      <div',
+    '        style={{',
+    "          background: 'white',",
+    '          borderRadius: 12,',
+    "          border: '1px solid #f3f4f6',",
+    "          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',",
+    "          overflow: 'hidden',",
+    '        }}',
+    '      >',
+    `        {${constName}.map((item, i) => (`,
+    '          <button',
+    '            key={i}',
+    '            onClick={() => setSelectedIdx(i === selectedIdx ? null : i)}',
+    '            style={{',
+    "              width: '100%',",
+    "              display: 'flex',",
+    "              alignItems: 'center',",
+    '              gap: 12,',
+    "              padding: '14px 16px',",
+    "              borderTop: i > 0 ? '1px solid #f9fafb' : 'none',",
+    "              background: i === selectedIdx ? PRIMARY_COLOR + '0d' : 'white',",
+    "              border: 'none',",
+    "              cursor: 'pointer',",
+    "              textAlign: 'left',",
+    '            }}',
+    '          >',
+    '            <div',
+    '              style={{',
+    '                width: 36,',
+    '                height: 36,',
+    "                borderRadius: '50%',",
+    '                background: PRIMARY_COLOR,',
+    "                display: 'flex',",
+    "                alignItems: 'center',",
+    "                justifyContent: 'center',",
+    "                color: 'white',",
+    '                fontSize: 12,',
+    '                fontWeight: 700,',
+    '                flexShrink: 0,',
+    '              }}',
+    '            >',
+    "              {item.title?.[0] ?? '?'}",
+    '            </div>',
+    '            <div style={{ flex: 1, minWidth: 0 }}>',
+    "              <p style={{ fontSize: 14, fontWeight: 500, color: '#1f2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>",
+    '                {item.title}',
+    '              </p>',
+    '              {item.subtitle && (',
+    "                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>{item.subtitle}</p>",
+    '              )}',
+    '            </div>',
+    "            {item.meta && <span style={{ fontSize: 12, color: '#9ca3af', flexShrink: 0 }}>{item.meta}</span>}",
+    '            {item.badge && (',
+    '              <span',
+    '                style={{',
+    '                  color: PRIMARY_COLOR,',
+    "                  background: PRIMARY_COLOR + '18',",
+    '                  fontSize: 10,',
+    '                  fontWeight: 600,',
+    "                  padding: '2px 6px',",
+    '                  borderRadius: 9999,',
+    '                  flexShrink: 0,',
+    '                }}',
+    '              >',
+    '                {item.badge}',
+    '              </span>',
+    '            )}',
+    '          </button>',
+    '        ))}',
+    '      </div>',
+    '    </section>',
+    '  )',
+    '}'
+  )
+
+  return { constDecl, componentDecl: lines.join('\n'), componentName }
+}
+
+// ─── Form ─────────────────────────────────────────────────────────────────────
+
+function formCode(s: FormSection, idx: number): SectionCode {
+  const componentName = `Section${idx}_Form`
+  const constName = `FORM_FIELDS_${idx}`
+  const constDecl = `const ${constName}: Array<{ label: string; type: string; placeholder?: string; required?: boolean; options?: string[] }> = ${JSON.stringify(s.fields ?? [], null, 2)}`
+
+  const lines: string[] = [
+    `function ${componentName}() {`,
+    '  const [textValues, setTextValues] = useState<Record<string, string>>({})',
+    '  const [toggleValues, setToggleValues] = useState<Record<string, boolean>>({})',
+    '  const setVal = (label: string, v: string) => setTextValues(p => ({ ...p, [label]: v }))',
+    '  const flipToggle = (label: string) => setToggleValues(p => ({ ...p, [label]: !p[label] }))',
+    '  return (',
+    '    <section',
+    '      style={{',
+    "        background: 'white',",
+    '        borderRadius: 16,',
+    '        padding: 20,',
+    "        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',",
+    "        border: '1px solid #f3f4f6',",
+    '      }}',
+    '    >',
+  ]
+
+  if (s.title) {
+    lines.push(
+      "      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', margin: '0 0 16px' }}>",
+      `        ${jxt(s.title)}`,
+      '      </h3>'
+    )
+  }
+
+  lines.push(
+    "      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>",
+    `        {${constName}.map((field, i) => (`,
+    '          <div key={i}>',
+    "            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#4b5563', marginBottom: 6 }}>",
+    '              {field.label}',
+    "              {field.required && <span style={{ color: '#f87171', marginLeft: 2 }}>*</span>}",
+    '            </label>',
+    "            {field.type === 'textarea' ? (",
+    '              <textarea',
+    '                placeholder={field.placeholder}',
+    '                rows={3}',
+    "                value={textValues[field.label] ?? ''}",
+    '                onChange={e => setVal(field.label, e.target.value)}',
+    '                style={{',
+    "                  width: '100%',",
+    '                  borderRadius: 12,',
+    "                  border: '1px solid #e5e7eb',",
+    "                  padding: '10px 12px',",
+    '                  fontSize: 14,',
+    "                  background: '#f9fafb',",
+    "                  resize: 'none',",
+    "                  boxSizing: 'border-box',",
+    "                  outline: 'none',",
+    '                }}',
+    '              />',
+    "            ) : field.type === 'select' ? (",
+    '              <select',
+    "                value={textValues[field.label] ?? field.options?.[0] ?? ''}",
+    '                onChange={e => setVal(field.label, e.target.value)}',
+    '                style={{',
+    "                  width: '100%',",
+    '                  borderRadius: 12,',
+    "                  border: '1px solid #e5e7eb',",
+    "                  padding: '10px 12px',",
+    '                  fontSize: 14,',
+    "                  background: '#f9fafb',",
+    "                  boxSizing: 'border-box',",
+    '                }}',
+    '              >',
+    "                {(field.options ?? (field.placeholder ? [field.placeholder] : ['선택하세요'])).map((opt, j) => (",
+    '                  <option key={j} value={opt}>{opt}</option>',
+    '                ))}',
+    '              </select>',
+    "            ) : field.type === 'toggle' ? (",
+    '              <div',
+    '                role="switch"',
+    '                aria-checked={toggleValues[field.label] ?? false}',
+    '                tabIndex={0}',
+    '                onClick={() => flipToggle(field.label)}',
+    "                onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && flipToggle(field.label)}",
+    "                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 0' }}",
+    '              >',
+    "                <span style={{ fontSize: 14, color: '#4b5563' }}>",
+    "                  {field.placeholder ?? '켜기 / 끄기'}",
+    '                </span>',
+    '                <div',
+    '                  style={{',
+    '                    width: 44,',
+    '                    height: 24,',
+    '                    borderRadius: 12,',
+    "                    background: toggleValues[field.label] ? PRIMARY_COLOR : '#d1d5db',",
+    "                    position: 'relative',",
+    "                    transition: 'background 0.2s',",
+    '                    flexShrink: 0,',
+    '                  }}',
+    '                >',
+    '                  <div',
+    '                    style={{',
+    "                      position: 'absolute',",
+    '                      top: 2,',
+    '                      width: 20,',
+    '                      height: 20,',
+    '                      borderRadius: 10,',
+    "                      background: 'white',",
+    "                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',",
+    "                      transition: 'transform 0.2s',",
+    "                      transform: toggleValues[field.label] ? 'translateX(22px)' : 'translateX(2px)',",
+    '                    }}',
+    '                  />',
+    '                </div>',
+    '              </div>',
+    '            ) : (',
+    '              <input',
+    '                type={field.type as React.HTMLInputTypeAttribute}',
+    '                placeholder={field.placeholder}',
+    "                value={textValues[field.label] ?? ''}",
+    '                onChange={e => setVal(field.label, e.target.value)}',
+    '                style={{',
+    "                  width: '100%',",
+    '                  borderRadius: 12,',
+    "                  border: '1px solid #e5e7eb',",
+    "                  padding: '10px 12px',",
+    '                  fontSize: 14,',
+    "                  background: '#f9fafb',",
+    "                  boxSizing: 'border-box',",
+    "                  outline: 'none',",
+    '                }}',
+    '              />',
+    '            )}',
+    '          </div>',
+    '        ))}',
+    '      </div>',
+    '      <button',
+    "        onClick={() => alert('저장되었습니다 ✓')}",
+    '        style={{',
+    "          width: '100%',",
+    '          background: PRIMARY_COLOR,',
+    "          color: 'white',",
+    "          border: 'none',",
+    '          borderRadius: 12,',
+    "          padding: '12px',",
+    '          fontSize: 14,',
+    '          fontWeight: 700,',
+    "          cursor: 'pointer',",
+    '          marginTop: 20,',
+    '        }}',
+    '      >',
+    `        ${jxt(s.submitText ?? '제출')}`,
+    '      </button>',
+    '    </section>',
+    '  )',
+    '}'
+  )
+
+  return { constDecl, componentDecl: lines.join('\n'), componentName }
+}
+
+// ─── Detail ───────────────────────────────────────────────────────────────────
+
+function detailCode(s: DetailSection, idx: number): SectionCode {
+  const componentName = `Section${idx}_Detail`
+  const constName = `DETAIL_FIELDS_${idx}`
+  const constDecl = `const ${constName}: Array<{ label: string; value: string }> = ${JSON.stringify(s.fields ?? [], null, 2)}`
+
+  const lines: string[] = [
+    `function ${componentName}() {`,
+    '  return (',
+    '    <section',
+    '      style={{',
+    "        background: 'white',",
+    '        borderRadius: 16,',
+    '        padding: 20,',
+    "        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',",
+    "        border: '1px solid #f3f4f6',",
+    '      }}',
+    '    >',
+    "      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', margin: '0 0 16px' }}>",
+    `        ${jxt(s.title || '상세 정보')}`,
+    '      </h3>',
+    "      <dl style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>",
+    `        {${constName}.map((field, i) => (`,
+    "          <div key={i} style={{ display: 'flex', gap: 12 }}>",
+    "            <dt style={{ fontSize: 12, color: '#9ca3af', width: 80, flexShrink: 0, paddingTop: 2 }}>",
+    '              {field.label}',
+    '            </dt>',
+    "            <dd style={{ fontSize: 14, color: '#1f2937', fontWeight: 500, margin: 0 }}>",
+    '              {field.value}',
+    '            </dd>',
+    '          </div>',
+    '        ))}',
+    '      </dl>',
+    '    </section>',
+    '  )',
+    '}',
+  ]
+
+  return { constDecl, componentDecl: lines.join('\n'), componentName }
+}
+
+// ─── Chat ─────────────────────────────────────────────────────────────────────
+
+function chatCode(s: ChatSection, idx: number): SectionCode {
+  const componentName = `Section${idx}_Chat`
+  const constName = `INITIAL_MESSAGES_${idx}`
+  const constDecl = `const ${constName}: Array<{ sender: 'user' | 'bot'; text: string }> = ${JSON.stringify(s.messages ?? [], null, 2)}`
+
+  const lines: string[] = [
+    `function ${componentName}() {`,
+    `  const [messages, setMessages] = useState(${constName})`,
+    "  const [input, setInput] = useState('')",
+    '  const listRef = useRef<HTMLDivElement>(null)',
+    '  useEffect(() => {',
+    '    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight',
+    '  }, [messages.length])',
+    '  const handleSend = () => {',
+    '    const text = input.trim()',
+    '    if (!text) return',
+    "    setMessages(prev => [...prev, { sender: 'user', text }])",
+    "    setInput('')",
+    '  }',
+    '  return (',
+    '    <section',
+    '      style={{',
+    "        background: 'white',",
+    '        borderRadius: 16,',
+    "        border: '1px solid #f3f4f6',",
+    "        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',",
+    "        overflow: 'hidden',",
+    '      }}',
+    '    >',
+  ]
+
+  if (s.title) {
+    lines.push(
+      "      <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6' }}>",
+      "        <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', margin: 0 }}>",
+      `          ${jxt(s.title)}`,
+      '        </h3>',
+      '      </div>'
+    )
+  }
+
+  lines.push(
+    '      <div',
+    '        ref={listRef}',
+    '        style={{',
+    "          padding: '12px 16px',",
+    '          minHeight: 100,',
+    '          maxHeight: 260,',
+    "          overflowY: 'auto',",
+    "          display: 'flex',",
+    "          flexDirection: 'column',",
+    '          gap: 12,',
+    '        }}',
+    '      >',
+    '        {messages.map((msg, i) => {',
+    "          const isUser = msg.sender === 'user'",
+    '          return (',
+    '            <div',
+    '              key={i}',
+    "              style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}",
+    '            >',
+    '              <div',
+    '                style={{',
+    "                  background: isUser ? PRIMARY_COLOR : '#f3f4f6',",
+    "                  color: isUser ? 'white' : '#1f2937',",
+    '                  borderRadius: 16,',
+    "                  padding: '8px 14px',",
+    "                  maxWidth: '72%',",
+    '                  fontSize: 14,',
+    '                  lineHeight: 1.5,',
+    '                }}',
+    '              >',
+    '                {msg.text}',
+    '              </div>',
+    '            </div>',
+    '          )',
+    '        })}',
+    '      </div>',
+    '      <div',
+    "        style={{ padding: '10px 12px', borderTop: '1px solid #f3f4f6', display: 'flex', gap: 8, alignItems: 'center' }}",
+    '      >',
+    '        <input',
+    `          placeholder={${JSON.stringify(s.inputPlaceholder ?? '메시지를 입력하세요…')}}`,
+    '          value={input}',
+    '          onChange={e => setInput(e.target.value)}',
+    "          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}",
+    '          style={{',
+    '            flex: 1,',
+    '            borderRadius: 9999,',
+    "            border: '1px solid #e5e7eb',",
+    "            padding: '6px 16px',",
+    '            fontSize: 14,',
+    "            background: '#f9fafb',",
+    "            outline: 'none',",
+    '          }}',
+    '        />',
+    '        <button',
+    '          onClick={handleSend}',
+    '          aria-label="전송"',
+    '          style={{',
+    '            background: PRIMARY_COLOR,',
+    "            color: 'white',",
+    "            border: 'none',",
+    '            borderRadius: 9999,',
+    '            width: 36,',
+    '            height: 36,',
+    "            display: 'flex',",
+    "            alignItems: 'center',",
+    "            justifyContent: 'center',",
+    "            cursor: 'pointer',",
+    '            flexShrink: 0,',
+    '            fontSize: 14,',
+    '          }}',
+    '        >',
+    '          ▶',
+    '        </button>',
+    '      </div>',
+    '    </section>',
+    '  )',
+    '}'
+  )
+
+  return { constDecl, componentDecl: lines.join('\n'), componentName }
+}
+
+// ─── Router ───────────────────────────────────────────────────────────────────
+
+function sectionToCode(section: UISection, idx: number): SectionCode {
+  switch (section.type) {
+    case 'Hero':
+      return heroCode(section, idx)
+    case 'CardGrid':
+      return cardGridCode(section, idx)
+    case 'List':
+      return listCode(section, idx)
+    case 'Form':
+      return formCode(section, idx)
+    case 'Detail':
+      return detailCode(section, idx)
+    case 'Chat':
+      return chatCode(section, idx)
+    default: {
+      const _exhaustive: never = section
+      void _exhaustive
+      return { constDecl: null, componentDecl: '', componentName: '' }
+    }
+  }
+}
+
+// ─── Main assembler ───────────────────────────────────────────────────────────
+
+export function schemaToTsx(schema: UISchema): string {
+  const compName = toComponentName(schema.appName) + 'App'
+  const color = schema.theme.primaryColor
+
+  const constDecls: string[] = []
+  const componentDecls: string[] = []
+  const componentNames: string[] = []
+
+  schema.sections.forEach((section, idx) => {
+    const { constDecl, componentDecl, componentName } = sectionToCode(section, idx)
+    if (constDecl) constDecls.push(constDecl)
+    if (componentDecl && componentName) {
+      componentDecls.push(componentDecl)
+      componentNames.push(componentName)
+    }
+  })
+
+  const parts: string[] = [
+    "'use client'",
+    '',
+    "import React, { useState, useRef, useEffect } from 'react'",
+    '',
+    '// Generated by MyWebAppBuilder',
+    `const PRIMARY_COLOR = ${JSON.stringify(color)}`,
+  ]
+
+  if (constDecls.length > 0) {
+    parts.push('', ...constDecls)
+  }
+
+  componentDecls.forEach((decl) => parts.push('', decl))
+
+  parts.push(
+    '',
+    `export default function ${compName}() {`,
+    '  return (',
+    "    <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: 'system-ui, sans-serif' }}>",
+    '      <header',
+    '        style={{',
+    '          backgroundColor: PRIMARY_COLOR,',
+    "          padding: '12px 16px',",
+    "          display: 'flex',",
+    "          alignItems: 'center',",
+    '        }}',
+    '      >',
+    `        <h1 style={{ color: 'white', fontSize: 15, fontWeight: 700, margin: 0 }}>{${JSON.stringify(schema.appName)}}</h1>`,
+    '      </header>',
+    "      <main style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>",
+    ...componentNames.map((name) => `        <${name} />`),
+    '      </main>',
+    '    </div>',
+    '  )',
+    '}'
+  )
+
+  return parts.join('\n')
+}
