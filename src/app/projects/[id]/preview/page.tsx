@@ -9,6 +9,11 @@ import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 import AppPreviewRenderer from '@/components/preview/AppPreviewRenderer'
 import CodeViewModal from '@/components/preview/CodeViewModal'
 
+function toFileName(appName: string): string {
+  const slug = appName.trim().replace(/\s+/g, '-').replace(/[/\\:*?"<>|]/g, '') || 'generated-app'
+  return `${slug}.tsx`
+}
+
 export default function PreviewPage() {
   const { id } = useParams<{ id: string }>()
   const { project, loading, updateProject } = useProject(id)
@@ -95,7 +100,13 @@ export default function PreviewPage() {
         </div>
       </main>
 
-      {showCode && <CodeViewModal code={generatedCode} onClose={() => setShowCode(false)} />}
+      {showCode && (
+        <CodeViewModal
+          code={generatedCode}
+          fileName={toFileName(project.generatedApp?.appName ?? 'generated-app')}
+          onClose={() => setShowCode(false)}
+        />
+      )}
     </>
   )
 }
