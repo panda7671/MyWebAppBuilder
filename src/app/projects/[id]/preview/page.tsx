@@ -10,7 +10,11 @@ import AppPreviewRenderer from '@/components/preview/AppPreviewRenderer'
 import CodeViewModal from '@/components/preview/CodeViewModal'
 
 function toFileName(appName: string): string {
-  const slug = appName.trim().replace(/\s+/g, '-').replace(/[/\\:*?"<>|]/g, '') || 'generated-app'
+  const slug =
+    appName
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[/\\:*?"<>|]/g, '') || 'generated-app'
   return `${slug}.tsx`
 }
 
@@ -73,6 +77,15 @@ export default function PreviewPage() {
           {aiError && (
             <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
               {aiError}
+            </div>
+          )}
+
+          {process.env.NODE_ENV === 'development' && project.generatedApp && (
+            <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500 font-mono">
+              [DEV] 섹션 {project.generatedApp.sections.length}개
+              {project.generatedApp.sections.length > 0 && (
+                <> — {project.generatedApp.sections.map((s) => s.type).join(' · ')}</>
+              )}
             </div>
           )}
 

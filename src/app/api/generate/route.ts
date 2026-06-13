@@ -144,6 +144,10 @@ export async function POST(request: NextRequest) {
           try {
             schema = await claudeGenerateApp(plan, screens)
             console.log('[AI] Using Claude API: app')
+            if (schema.sections.length === 0) {
+              console.log('[AI] Claude returned empty sections, falling back to mock-ai: app')
+              schema = generateApp(plan)
+            }
           } catch {
             console.log('[AI] Falling back to mock-ai: app')
             schema = generateApp(plan)

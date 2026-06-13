@@ -103,7 +103,32 @@ ${qaText}
   }
 }
 
-const VALID_APP_SECTION_TYPES = new Set(['Hero', 'CardGrid', 'Form', 'List', 'Detail', 'Chat'])
+const SECTION_TYPE_ALIASES: Record<string, UISection['type']> = {
+  hero: 'Hero',
+  cardgrid: 'CardGrid',
+  card_grid: 'CardGrid',
+  'card-grid': 'CardGrid',
+  form: 'Form',
+  list: 'List',
+  detail: 'Detail',
+  chat: 'Chat',
+}
+
+const VALID_APP_SECTION_TYPES = new Set<UISection['type']>([
+  'Hero',
+  'CardGrid',
+  'Form',
+  'List',
+  'Detail',
+  'Chat',
+])
+
+function normalizeSectionType(raw: unknown): UISection['type'] | null {
+  if (typeof raw !== 'string') return null
+  if (VALID_APP_SECTION_TYPES.has(raw as UISection['type'])) return raw as UISection['type']
+  const lower = raw.toLowerCase().replace(/\s/g, '')
+  return SECTION_TYPE_ALIASES[lower] ?? null
+}
 
 export async function claudeGenerateApp(plan: AppPlan, screens: Screen[]): Promise<UISchema> {
   const screenNames = screens.map((s) => s.name).join(', ')
@@ -143,12 +168,13 @@ export async function claudeGenerateApp(plan: AppPlan, screens: Screen[]): Promi
   const parsed = JSON.parse(extractJson(text)) as Record<string, unknown>
 
   const rawSections = Array.isArray(parsed.sections) ? parsed.sections : []
-  const sections = (rawSections as unknown[]).filter(
-    (s): s is UISection =>
-      typeof s === 'object' &&
-      s !== null &&
-      VALID_APP_SECTION_TYPES.has((s as Record<string, unknown>).type as string)
-  )
+  const sections = (rawSections as unknown[]).flatMap((s): UISection[] => {
+    if (typeof s !== 'object' || s === null) return []
+    const raw = s as Record<string, unknown>
+    const normalizedType = normalizeSectionType(raw.type)
+    if (!normalizedType) return []
+    return [{ ...raw, type: normalizedType } as UISection]
+  })
 
   const rawTheme =
     typeof parsed.theme === 'object' && parsed.theme !== null

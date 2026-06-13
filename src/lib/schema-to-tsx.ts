@@ -608,11 +608,32 @@ function sectionToCode(section: UISection, idx: number): SectionCode {
 
 // ─── Main assembler ───────────────────────────────────────────────────────────
 
+function makeFallbackSections(appName: string): UISection[] {
+  return [
+    {
+      type: 'Hero',
+      title: `${appName}에 오신 것을 환영합니다`,
+      subtitle: `${appName}를 소개합니다.`,
+      ctaText: '시작하기',
+    },
+    {
+      type: 'List',
+      title: '주요 기능',
+      items: [
+        { title: '핵심 기능 1', subtitle: '앱의 주요 기능입니다', badge: 'NEW' },
+        { title: '핵심 기능 2', subtitle: '편리한 기능을 제공합니다' },
+        { title: '핵심 기능 3', subtitle: '언제 어디서나 사용 가능합니다' },
+      ],
+    },
+  ]
+}
+
 export function schemaToTsx(schema: UISchema): string {
   const appName = schema.appName ?? 'MyApp'
   const compName = toComponentName(appName) + 'App'
   const color = schema.theme?.primaryColor ?? '#6366f1'
-  const sections = schema.sections ?? []
+  const rawSections = schema.sections ?? []
+  const sections: UISection[] = rawSections.length > 0 ? rawSections : makeFallbackSections(appName)
 
   const needsState = sections.some(
     (s) => s.type === 'CardGrid' || s.type === 'List' || s.type === 'Form' || s.type === 'Chat'
