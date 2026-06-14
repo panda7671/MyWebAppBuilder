@@ -117,6 +117,7 @@ export default function PreviewPage() {
         <CodeViewModal
           code={generatedCode}
           fileName={toFileName(project.generatedApp?.appName ?? 'generated-app')}
+          appName={project.generatedApp?.appName ?? 'Generated App'}
           onClose={() => setShowCode(false)}
         />
       )}

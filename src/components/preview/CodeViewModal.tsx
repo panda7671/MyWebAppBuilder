@@ -6,6 +6,7 @@ import JSZip from 'jszip'
 interface CodeViewModalProps {
   code: string
   fileName?: string
+  appName?: string
   onClose: () => void
 }
 
@@ -16,23 +17,36 @@ function formatBytes(bytes: number): string {
 
 // ─── ZIP 내부 파일 템플릿 ──────────────────────────────────────────────────────
 
-const PACKAGE_JSON = JSON.stringify(
-  {
-    name: 'generated-app',
-    version: '0.1.0',
-    private: true,
-    scripts: { dev: 'next dev', build: 'next build', start: 'next start' },
-    dependencies: { next: '16.2.7', react: '19.2.4', 'react-dom': '19.2.4' },
-    devDependencies: {
-      typescript: '^5',
-      '@types/node': '^20',
-      '@types/react': '^19',
-      '@types/react-dom': '^19',
+function toPackageName(appName: string): string {
+  return (
+    appName
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/^-+|-+$/g, '') || 'generated-app'
+  )
+}
+
+function makePackageJson(packageName: string): string {
+  return JSON.stringify(
+    {
+      name: packageName,
+      version: '0.1.0',
+      private: true,
+      scripts: { dev: 'next dev', build: 'next build', start: 'next start' },
+      dependencies: { next: '^15.0.0', react: '^19.0.0', 'react-dom': '^19.0.0' },
+      devDependencies: {
+        typescript: '^5',
+        '@types/node': '^20',
+        '@types/react': '^19',
+        '@types/react-dom': '^19',
+      },
     },
-  },
-  null,
-  2
-)
+    null,
+    2
+  )
+}
 
 const TSCONFIG_JSON = JSON.stringify(
   {
@@ -73,7 +87,8 @@ out/
 .env*.local
 `
 
-const README_MD = `# Generated App
+function makeReadme(appName: string): string {
+  return `# ${appName}
 
 [MyWebAppBuilder](https://my-web-app-builder.vercel.app)로 생성된 Next.js 앱입니다.
 
@@ -97,7 +112,23 @@ src/
     └── components/
         └── GeneratedApp.tsx   ← 생성된 컴포넌트
 \`\`\`
+
+## 현재 한계
+
+이 앱은 UI 프로토타입입니다. 아래 기능은 포함되지 않습니다.
+
+- **데이터베이스**: 모든 데이터는 코드에 하드코딩된 초기값입니다.
+- **로그인 / 인증**: 사용자 계정 기능이 없습니다.
+- **서버 API**: 외부 서버와 통신하지 않습니다.
+- **이미지 업로드**: 파일 첨부 기능이 없습니다.
+- **버튼 / 폼 동작**: 클릭 시 브라우저 알림(alert)으로 대체됩니다.
+- **채팅 메시지**: 브라우저 내부 상태만 변경되며 서버로 전송되지 않습니다.
+
+## 커스터마이즈
+
+\`src/app/components/GeneratedApp.tsx\`를 직접 수정해 기능을 추가할 수 있습니다.
 `
+}
 
 const LAYOUT_TSX = `import type { Metadata } from 'next'
 import './globals.css'
@@ -141,6 +172,7 @@ body {
 export default function CodeViewModal({
   code,
   fileName = 'generated-app.tsx',
+  appName = 'Generated App',
   onClose,
 }: CodeViewModalProps) {
   const [copied, setCopied] = useState(false)
@@ -196,13 +228,14 @@ export default function CodeViewModal({
 
   const handleDownloadZip = useCallback(async () => {
     setZipping(true)
+    const packageName = toPackageName(appName)
     try {
       const zip = new JSZip()
-      zip.file('package.json', PACKAGE_JSON)
+      zip.file('package.json', makePackageJson(packageName))
       zip.file('tsconfig.json', TSCONFIG_JSON)
       zip.file('next.config.ts', NEXT_CONFIG)
       zip.file('.gitignore', GITIGNORE)
-      zip.file('README.md', README_MD)
+      zip.file('README.md', makeReadme(appName))
       zip.file('src/app/layout.tsx', LAYOUT_TSX)
       zip.file('src/app/page.tsx', PAGE_TSX)
       zip.file('src/app/globals.css', GLOBALS_CSS)
@@ -212,7 +245,7 @@ export default function CodeViewModal({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'generated-app.zip'
+      a.download = `${packageName}.zip`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -220,7 +253,7 @@ export default function CodeViewModal({
     } finally {
       setZipping(false)
     }
-  }, [code])
+  }, [code, appName])
 
   return (
     <div
