@@ -4,9 +4,11 @@ import ProjectCard from './ProjectCard'
 interface ProjectListProps {
   projects: Project[]
   onDelete: (id: string) => void
+  onRename: (id: string, name: string) => void
+  onClone: (project: Project) => void
 }
 
-export default function ProjectList({ projects, onDelete }: ProjectListProps) {
+export default function ProjectList({ projects, onDelete, onRename, onClone }: ProjectListProps) {
   if (projects.length === 0) {
     return (
       <div className="text-center py-16">
@@ -32,7 +34,12 @@ export default function ProjectList({ projects, onDelete }: ProjectListProps) {
     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {projects.map((project) => (
         <li key={project.id}>
-          <ProjectCard project={project} onDelete={onDelete} />
+          <ProjectCard
+            project={project}
+            onDelete={onDelete}
+            onRename={onRename}
+            onClone={onClone}
+          />
         </li>
       ))}
     </ul>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
 import { generateQuestionsAI, UsageLimitError } from '@/lib/ai-service'
+import { clearPlanAndBelow } from '@/lib/project-factory'
 import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 
 export default function QuestionsPage() {
@@ -42,6 +43,11 @@ export default function QuestionsPage() {
     }
   }, [project?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const hasChanged = (project?.qa.questions ?? []).some(
+    (q) => (answers[q.id] ?? '').trim() !== q.answer
+  )
+  const hasPlan = !!project?.plan.appName
+
   function handleAnswerChange(qId: string, value: string) {
     setShowError(false)
     setAnswers((prev) => ({ ...prev, [qId]: value }))
@@ -53,16 +59,19 @@ export default function QuestionsPage() {
       setShowError(true)
       return
     }
-    updateProject((p) => ({
-      ...p,
-      status: 'planned',
-      qa: {
-        questions: p.qa.questions.map((q) => ({
-          ...q,
-          answer: answers[q.id] ?? '',
-        })),
-      },
-    }))
+    updateProject((p) => {
+      const withQa = {
+        ...p,
+        status: 'planned' as const,
+        qa: {
+          questions: p.qa.questions.map((q) => ({
+            ...q,
+            answer: answers[q.id] ?? '',
+          })),
+        },
+      }
+      return hasChanged ? clearPlanAndBelow(withQa) : withQa
+    })
     router.push(`/projects/${id}/plan`)
   }
 
@@ -87,12 +96,18 @@ export default function QuestionsPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">
       <div className="w-full max-w-lg">
-        <ProjectPageHeader currentStep={1} />
+        <ProjectPageHeader currentStep={1} projectId={id} />
 
         <h1 className="text-2xl font-bold text-gray-900 mb-2">조금 더 알려주세요</h1>
         <p className="text-gray-500 mb-8 text-sm">
           질문에 많이 답할수록 내 앱과 더 잘 맞는 기획서가 나와요.
         </p>
+
+        {hasPlan && hasChanged && (
+          <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            답변을 수정하면 기존 기획서, 화면 목록, 미리보기를 다시 생성해야 합니다.
+          </div>
+        )}
 
         {aiError && (
           <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
@@ -143,7 +158,7 @@ export default function QuestionsPage() {
             onClick={handleDone}
             className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
           >
-            기획서 만들기 →
+            {hasPlan && hasChanged ? '저장하고 기획서 다시 생성' : '기획서 만들기 →'}
           </button>
         </div>
       </div>

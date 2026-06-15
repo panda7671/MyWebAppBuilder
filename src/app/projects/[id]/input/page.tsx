@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
+import { clearQaAndBelow } from '@/lib/project-factory'
 import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 
 export default function InputPage() {
@@ -16,9 +17,20 @@ export default function InputPage() {
     if (project) setDescription(project.input.description)
   }, [project?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const hasDescriptionChanged = !!project && description.trim() !== project.input.description
+  const hasDownstream =
+    !!project &&
+    (project.qa.questions.length > 0 ||
+      !!project.plan.appName ||
+      project.screens.length > 0 ||
+      !!project.generatedApp)
+
   function handleNext() {
     if (!description.trim()) return
-    updateProject((p) => ({ ...p, input: { description: description.trim() } }))
+    updateProject((p) => {
+      const updated = { ...p, input: { description: description.trim() } }
+      return hasDescriptionChanged ? clearQaAndBelow(updated) : updated
+    })
     router.push(`/projects/${id}/questions`)
   }
 
@@ -35,12 +47,18 @@ export default function InputPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">
       <div className="w-full max-w-lg">
-        <ProjectPageHeader currentStep={0} />
+        <ProjectPageHeader currentStep={0} projectId={id} />
 
         <h1 className="text-2xl font-bold text-gray-900 mb-2">어떤 앱을 만들고 싶나요?</h1>
         <p className="text-gray-500 mb-6 text-sm">
           만들고 싶은 앱을 자유롭게 설명해주세요. 아이디어가 구체적일수록 좋습니다.
         </p>
+
+        {hasDescriptionChanged && hasDownstream && (
+          <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            앱 설명을 수정하면 기존 질문, 기획서, 화면 목록, 미리보기를 다시 생성해야 합니다.
+          </div>
+        )}
 
         <textarea
           value={description}

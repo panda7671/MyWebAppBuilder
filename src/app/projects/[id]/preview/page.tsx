@@ -67,7 +67,7 @@ export default function PreviewPage() {
     <>
       <main className="flex flex-1 flex-col items-center px-4 py-12">
         <div className="w-full max-w-lg">
-          <ProjectPageHeader currentStep={4} />
+          <ProjectPageHeader currentStep={4} projectId={id} />
 
           <h1 className="text-2xl font-bold text-gray-900 mb-2">앱 미리보기</h1>
           <p className="text-gray-500 mb-6 text-sm">

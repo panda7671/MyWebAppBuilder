@@ -4,27 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
 import StepIndicator from '@/components/layout/StepIndicator'
 import { Project } from '@/types'
-
-function getProgress(project: Project): number {
-  if (project.generatedApp) return 5
-  if (project.screens.length > 0) return 4
-  if (project.plan.appName) return 3
-  if (project.qa.questions.some((q) => q.answer)) return 2
-  if (project.input.description) return 1
-  return 0
-}
-
-function getResumeHref(id: string, project: Project): string {
-  const step = getProgress(project)
-  if (step >= 4) return `/projects/${id}/preview`
-  const hrefs = [
-    `/projects/${id}/input`,
-    `/projects/${id}/questions`,
-    `/projects/${id}/plan`,
-    `/projects/${id}/screens`,
-  ]
-  return hrefs[step]
-}
+import { getProjectProgress, getResumeHref } from '@/lib/project-progress'
 
 const STEP_LABELS = ['앱 설명', '추가 질문', '기획서', '화면 목록', '와이어프레임', '미리보기']
 
@@ -73,41 +53,72 @@ export default function ProjectDetailPage() {
     )
   }
 
-  const progress = getProgress(project)
+  const progress = getProjectProgress(project)
   const appName = project.plan.appName || project.input.description || '이름 없는 앱'
   const updatedDate = new Date(project.updatedAt).toLocaleDateString('ko-KR')
   const { label: statusLabel, cls: statusCls } = STATUS_CONFIG[project.status]
 
+  const hasDescription = !!project.input.description
+  const hasQaAnswers = project.qa.questions.some((q) => q.answer)
+  const hasPlan = !!project.plan.appName
+  const hasScreens = project.screens.length > 0
+
   const steps = [
-    { label: STEP_LABELS[0], href: `/projects/${id}/input`, done: !!project.input.description },
+    {
+      label: STEP_LABELS[0],
+      href: `/projects/${id}/input`,
+      done: hasDescription,
+      enabled: true,
+      disabledReason: '',
+    },
     {
       label: STEP_LABELS[1],
       href: `/projects/${id}/questions`,
-      done: project.qa.questions.some((q) => q.answer),
+      done: hasQaAnswers,
+      enabled: hasDescription,
+      disabledReason: '앱 설명을 먼저 입력해주세요',
     },
-    { label: STEP_LABELS[2], href: `/projects/${id}/plan`, done: !!project.plan.appName },
-    { label: STEP_LABELS[3], href: `/projects/${id}/screens`, done: project.screens.length > 0 },
+    {
+      label: STEP_LABELS[2],
+      href: `/projects/${id}/plan`,
+      done: hasPlan,
+      enabled: hasQaAnswers || hasPlan,
+      disabledReason: '추가 질문을 먼저 완료해주세요',
+    },
+    {
+      label: STEP_LABELS[3],
+      href: `/projects/${id}/screens`,
+      done: hasScreens,
+      enabled: hasPlan || hasScreens,
+      disabledReason: '기획서를 먼저 완료해주세요',
+    },
     {
       label: STEP_LABELS[4],
-      href:
-        project.screens.length > 0
-          ? `/projects/${id}/screens/${project.screens[0].id}`
-          : `/projects/${id}/screens`,
-      done: project.screens.length > 0,
+      href: hasScreens
+        ? `/projects/${id}/screens/${project.screens[0].id}`
+        : `/projects/${id}/screens`,
+      done: hasScreens,
+      enabled: hasScreens,
+      disabledReason: '화면 목록을 먼저 생성해주세요',
     },
     {
       label: STEP_LABELS[5],
       href: `/projects/${id}/preview`,
       done: !!project.generatedApp,
+      enabled: hasScreens,
+      disabledReason: '화면 목록을 먼저 생성해주세요',
     },
   ]
 
-  const resumeLabel =
-    progress >= 5
-      ? '미리보기 보기'
-      : progress >= 4
-        ? '미리보기 생성'
-        : `${STEP_LABELS[progress]} 계속하기`
+  const RESUME_LABELS = [
+    '앱 설명 작성하기',
+    '앱 설명 수정하기',
+    '추가 질문 보기',
+    '기획서 보기',
+    '화면 목록 보기',
+    '미리보기 보기',
+  ]
+  const resumeLabel = RESUME_LABELS[progress] ?? '이어가기'
 
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">
@@ -130,12 +141,19 @@ export default function ProjectDetailPage() {
           {steps.map((step, i) => (
             <button
               key={i}
-              onClick={() => router.push(step.href)}
-              className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors text-left"
+              onClick={() => step.enabled && router.push(step.href)}
+              disabled={!step.enabled}
+              className={`w-full flex items-center gap-4 px-5 py-3.5 text-left transition-colors ${
+                step.enabled ? 'hover:bg-gray-50' : 'cursor-not-allowed'
+              }`}
             >
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                  step.done ? 'bg-indigo-500' : 'border-2 border-gray-300'
+                  step.done
+                    ? 'bg-indigo-500'
+                    : step.enabled
+                      ? 'border-2 border-gray-300'
+                      : 'border-2 border-gray-200'
                 }`}
               >
                 {step.done && (
@@ -150,20 +168,29 @@ export default function ProjectDetailPage() {
                   </svg>
                 )}
               </div>
-              <span
-                className={`flex-1 text-sm font-medium ${step.done ? 'text-gray-700' : 'text-gray-400'}`}
-              >
-                {step.label}
-              </span>
-              <svg className="w-4 h-4 text-gray-300 shrink-0" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M6 4l4 4-4 4"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <div className="flex-1 min-w-0">
+                <span
+                  className={`text-sm font-medium ${
+                    step.done ? 'text-gray-700' : step.enabled ? 'text-gray-400' : 'text-gray-300'
+                  }`}
+                >
+                  {step.label}
+                </span>
+                {!step.enabled && (
+                  <p className="text-[10px] text-gray-300 mt-0.5">{step.disabledReason}</p>
+                )}
+              </div>
+              {step.enabled && (
+                <svg className="w-4 h-4 text-gray-300 shrink-0" viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="M6 4l4 4-4 4"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
             </button>
           ))}
         </div>

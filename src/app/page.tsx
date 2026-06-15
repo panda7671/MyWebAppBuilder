@@ -6,7 +6,7 @@ import ProjectList from '@/components/project/ProjectList'
 
 export default function HomePage() {
   const router = useRouter()
-  const { projects, createProject, deleteProject } = useProjects()
+  const { projects, createProject, deleteProject, renameProject, cloneProject } = useProjects()
 
   function handleNewProject() {
     const project = createProject('')
@@ -32,7 +32,12 @@ export default function HomePage() {
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">
           내 프로젝트
         </h2>
-        <ProjectList projects={projects} onDelete={deleteProject} />
+        <ProjectList
+          projects={projects}
+          onDelete={deleteProject}
+          onRename={renameProject}
+          onClone={cloneProject}
+        />
       </section>
     </main>
   )

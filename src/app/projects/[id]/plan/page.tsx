@@ -7,6 +7,7 @@ import { generatePlanAI, UsageLimitError } from '@/lib/ai-service'
 import PlanViewer from '@/components/plan/PlanViewer'
 import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 import { AppPlan } from '@/types'
+import { clearScreensAndBelow } from '@/lib/project-factory'
 
 export default function PlanPage() {
   const { id } = useParams<{ id: string }>()
@@ -22,7 +23,7 @@ export default function PlanPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGenerating(true)
       generatePlanAI(project.input.description, project.qa)
-        .then((plan) => updateProject((p) => ({ ...p, plan })))
+        .then((plan) => updateProject((p) => clearScreensAndBelow({ ...p, plan })))
         .catch((err: unknown) => {
           setAiError(
             err instanceof UsageLimitError
@@ -35,7 +36,7 @@ export default function PlanPage() {
   }, [project?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handlePlanChange(plan: AppPlan) {
-    updateProject((p) => ({ ...p, plan }))
+    updateProject((p) => clearScreensAndBelow({ ...p, plan }))
   }
 
   async function handleRegenerate() {
@@ -44,7 +45,7 @@ export default function PlanPage() {
     setAiError(null)
     try {
       const plan = await generatePlanAI(project.input.description, project.qa)
-      updateProject((p) => ({ ...p, plan }))
+      updateProject((p) => clearScreensAndBelow({ ...p, plan }))
     } catch (err: unknown) {
       setAiError(
         err instanceof UsageLimitError
@@ -75,7 +76,7 @@ export default function PlanPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-12">
       <div className="w-full max-w-lg">
-        <ProjectPageHeader currentStep={2} />
+        <ProjectPageHeader currentStep={2} projectId={id} />
 
         <h1 className="text-2xl font-bold text-gray-900 mb-2">기획서가 완성됐어요</h1>
         <p className="text-gray-500 mb-6 text-sm">
