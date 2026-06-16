@@ -6,24 +6,33 @@ import { AppPlan } from '@/types'
 interface PlanViewerProps {
   plan: AppPlan
   onChange: (plan: AppPlan) => void
+  onEditStart?: () => void
+  onEditCancel?: () => void
 }
 
-export default function PlanViewer({ plan, onChange }: PlanViewerProps) {
+export default function PlanViewer({ plan, onChange, onEditStart, onEditCancel }: PlanViewerProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<AppPlan>(plan)
 
   function handleEdit() {
     setDraft(plan)
     setEditing(true)
+    onEditStart?.()
   }
 
   function handleSave() {
-    onChange(draft)
+    const changed = JSON.stringify(draft) !== JSON.stringify(plan)
+    if (changed) {
+      onChange(draft)
+    } else {
+      onEditCancel?.()
+    }
     setEditing(false)
   }
 
   function handleCancel() {
     setEditing(false)
+    onEditCancel?.()
   }
 
   function setDraftField<K extends keyof AppPlan>(key: K, value: AppPlan[K]) {

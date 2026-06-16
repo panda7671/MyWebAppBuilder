@@ -15,6 +15,8 @@ export default function PlanPage() {
   const { project, loading, updateProject } = useProject(id)
   const [generating, setGenerating] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [isPlanEditing, setIsPlanEditing] = useState(false)
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
 
   useEffect(() => {
     if (!project) return
@@ -37,10 +39,12 @@ export default function PlanPage() {
 
   function handlePlanChange(plan: AppPlan) {
     updateProject((p) => clearScreensAndBelow({ ...p, plan }))
+    setIsPlanEditing(false)
   }
 
   async function handleRegenerate() {
     if (!project) return
+    setShowRegenerateConfirm(false)
     setGenerating(true)
     setAiError(null)
     try {
@@ -54,6 +58,15 @@ export default function PlanPage() {
       )
     } finally {
       setGenerating(false)
+    }
+  }
+
+  function handleRegenerateClick() {
+    if (!project) return
+    if (project.screens.length > 0 || project.generatedApp) {
+      setShowRegenerateConfirm(true)
+    } else {
+      handleRegenerate()
     }
   }
 
@@ -89,11 +102,42 @@ export default function PlanPage() {
           </div>
         )}
 
-        <PlanViewer plan={project.plan} onChange={handlePlanChange} />
+        {isPlanEditing && (project.screens.length > 0 || project.generatedApp) && (
+          <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            기획서를 수정하면 기존 화면 목록과 미리보기를 다시 생성해야 합니다.
+          </div>
+        )}
+
+        {showRegenerateConfirm && (
+          <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            <p>기획서를 재생성하면 기존 화면 목록과 미리보기가 삭제됩니다. 계속할까요?</p>
+            <div className="mt-2 flex gap-3">
+              <button
+                onClick={handleRegenerate}
+                className="font-medium underline hover:no-underline"
+              >
+                재생성
+              </button>
+              <button
+                onClick={() => setShowRegenerateConfirm(false)}
+                className="text-amber-600 hover:text-amber-800"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+
+        <PlanViewer
+          plan={project.plan}
+          onChange={handlePlanChange}
+          onEditStart={() => setIsPlanEditing(true)}
+          onEditCancel={() => setIsPlanEditing(false)}
+        />
 
         <div className="mt-2 flex justify-end">
           <button
-            onClick={handleRegenerate}
+            onClick={handleRegenerateClick}
             disabled={generating}
             className="text-xs text-gray-400 hover:text-indigo-500 transition-colors disabled:opacity-40"
           >

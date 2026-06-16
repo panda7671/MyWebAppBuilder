@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
 import { generateAppAI, UsageLimitError } from '@/lib/ai-service'
 import { schemaToTsx } from '@/lib/schema-to-tsx'
@@ -20,6 +20,7 @@ function toFileName(appName: string): string {
 
 export default function PreviewPage() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const { project, loading, updateProject } = useProject(id)
   const [generating, setGenerating] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
@@ -110,6 +111,15 @@ export default function PreviewPage() {
               </button>
             </div>
           )}
+
+          <div className="mt-4 flex justify-between items-center">
+            <button
+              onClick={() => router.push(`/projects/${id}/screens`)}
+              className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              ← 이전
+            </button>
+          </div>
         </div>
       </main>
 
