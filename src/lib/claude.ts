@@ -81,7 +81,12 @@ ${qaText}
   "purpose": "앱의 목적과 핵심 가치 (1-2문장)",
   "targetUser": "주요 타겟 유저",
   "coreFeatures": ["기능1", "기능2", "기능3", "기능4", "기능5"],
-  "techStack": ["기술1", "기술2", "기술3"]
+  "techStack": ["기술1", "기술2", "기술3"],
+  "techDescriptions": {
+    "기술1": "이 앱의 어떤 핵심 기능 구현에 사용되는지 한 줄로 (예: 로그인·회원가입, 채팅 화면 구현에 사용)",
+    "기술2": "이 앱의 어떤 핵심 기능 구현에 사용되는지 한 줄로",
+    "기술3": "이 앱의 어떤 핵심 기능 구현에 사용되는지 한 줄로"
+  }
 }`,
       },
     ],
@@ -89,6 +94,13 @@ ${qaText}
 
   const text = response.content[0].type === 'text' ? response.content[0].text : ''
   const parsed = JSON.parse(extractJson(text)) as Record<string, unknown>
+
+  const techDescriptions: Record<string, string> = {}
+  if (typeof parsed.techDescriptions === 'object' && parsed.techDescriptions !== null) {
+    for (const [k, v] of Object.entries(parsed.techDescriptions)) {
+      if (typeof v === 'string') techDescriptions[k] = v
+    }
+  }
 
   return {
     appName: typeof parsed.appName === 'string' ? parsed.appName : '나만의 앱',
@@ -100,6 +112,7 @@ ${qaText}
     techStack: Array.isArray(parsed.techStack)
       ? (parsed.techStack as unknown[]).filter((t): t is string => typeof t === 'string')
       : [],
+    techDescriptions: Object.keys(techDescriptions).length > 0 ? techDescriptions : undefined,
   }
 }
 

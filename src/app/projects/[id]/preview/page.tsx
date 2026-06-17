@@ -9,6 +9,15 @@ import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 import AppPreviewRenderer from '@/components/preview/AppPreviewRenderer'
 import CodeViewModal from '@/components/preview/CodeViewModal'
 
+const SECTION_LABELS: Record<string, string> = {
+  Hero: '메인 소개',
+  CardGrid: '기능 카드',
+  List: '목록',
+  Form: '입력 폼',
+  Detail: '상세 정보',
+  Chat: '채팅',
+}
+
 function toFileName(appName: string): string {
   const slug =
     appName
@@ -81,12 +90,26 @@ export default function PreviewPage() {
             </div>
           )}
 
-          {process.env.NODE_ENV === 'development' && project.generatedApp && (
-            <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500 font-mono">
-              [DEV] 섹션 {project.generatedApp.sections.length}개
-              {project.generatedApp.sections.length > 0 && (
-                <> — {project.generatedApp.sections.map((s) => s.type).join(' · ')}</>
-              )}
+          {project.generatedApp && project.generatedApp.sections.length > 0 && (
+            <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs text-gray-500 mb-2">
+                총{' '}
+                <span className="font-semibold text-gray-700">
+                  {project.generatedApp.sections.length}개
+                </span>{' '}
+                화면 요소로 구성됐어요
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {project.generatedApp.sections.map((s, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-gray-200 text-xs text-gray-600"
+                  >
+                    <span className="text-gray-300">{i + 1}</span>
+                    {SECTION_LABELS[s.type] ?? s.type}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 

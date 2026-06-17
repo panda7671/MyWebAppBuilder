@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import StepIndicator from './StepIndicator'
+import { useProject } from '@/hooks/useProject'
+import { getProjectProgress } from '@/lib/project-progress'
 
 interface ProjectPageHeaderProps {
   currentStep: number
@@ -10,6 +12,11 @@ interface ProjectPageHeaderProps {
 
 export default function ProjectPageHeader({ currentStep, projectId }: ProjectPageHeaderProps) {
   const router = useRouter()
+  const { project } = useProject(projectId ?? '')
+
+  const maxUnlockedStep = project
+    ? Math.max(currentStep, getProjectProgress(project) - 1)
+    : currentStep
 
   return (
     <div className="w-full">
@@ -29,7 +36,11 @@ export default function ProjectPageHeader({ currentStep, projectId }: ProjectPag
           {projectId ? '홈으로' : '← 홈으로'}
         </button>
       </div>
-      <StepIndicator currentStep={currentStep} />
+      <StepIndicator
+        currentStep={currentStep}
+        projectId={projectId}
+        maxUnlockedStep={maxUnlockedStep}
+      />
     </div>
   )
 }

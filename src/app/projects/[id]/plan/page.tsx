@@ -5,9 +5,12 @@ import { useParams, useRouter } from 'next/navigation'
 import { useProject } from '@/hooks/useProject'
 import { generatePlanAI, UsageLimitError } from '@/lib/ai-service'
 import PlanViewer from '@/components/plan/PlanViewer'
+import PlanVersionComparison from '@/components/plan/PlanVersionComparison'
 import ProjectPageHeader from '@/components/layout/ProjectPageHeader'
 import { AppPlan } from '@/types'
 import { clearScreensAndBelow } from '@/lib/project-factory'
+
+const MAX_CANDIDATES = 2
 
 export default function PlanPage() {
   const { id } = useParams<{ id: string }>()
@@ -16,7 +19,6 @@ export default function PlanPage() {
   const [generating, setGenerating] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
   const [isPlanEditing, setIsPlanEditing] = useState(false)
-  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
 
   useEffect(() => {
     if (!project) return
@@ -44,12 +46,18 @@ export default function PlanPage() {
 
   async function handleRegenerate() {
     if (!project) return
-    setShowRegenerateConfirm(false)
     setGenerating(true)
     setAiError(null)
     try {
-      const plan = await generatePlanAI(project.input.description, project.qa)
-      updateProject((p) => clearScreensAndBelow({ ...p, plan }))
+      const newPlan = await generatePlanAI(project.input.description, project.qa)
+      updateProject((p) => {
+        const existing = p.planCandidates ?? []
+        const updated =
+          existing.length >= MAX_CANDIDATES
+            ? [...existing.slice(1), newPlan]
+            : [...existing, newPlan]
+        return { ...p, planCandidates: updated }
+      })
     } catch (err: unknown) {
       setAiError(
         err instanceof UsageLimitError
@@ -61,14 +69,17 @@ export default function PlanPage() {
     }
   }
 
-  function handleRegenerateClick() {
-    if (!project) return
-    if (project.screens.length > 0 || project.generatedApp) {
-      setShowRegenerateConfirm(true)
-    } else {
-      handleRegenerate()
-    }
+  function handleKeepCurrent() {
+    updateProject((p) => ({ ...p, planCandidates: [] }))
   }
+
+  function handleSelectCandidate(plan: AppPlan) {
+    updateProject((p) => clearScreensAndBelow({ ...p, plan, planCandidates: [] }))
+  }
+
+  const hasDownstream = !!project && (project.screens.length > 0 || !!project.generatedApp)
+  const candidates = project?.planCandidates ?? []
+  const isComparing = candidates.length > 0
 
   if (loading || generating) {
     return (
@@ -91,9 +102,13 @@ export default function PlanPage() {
       <div className="w-full max-w-lg">
         <ProjectPageHeader currentStep={2} projectId={id} />
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">기획서가 완성됐어요</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          {isComparing ? '기획서 버전 비교' : '기획서가 완성됐어요'}
+        </h1>
         <p className="text-gray-500 mb-6 text-sm">
-          내용을 확인하고, 수정이 필요하면 직접 편집할 수 있어요.
+          {isComparing
+            ? '탭을 눌러 버전을 비교하고, 마음에 드는 버전을 선택하세요.'
+            : '내용을 확인하고, 수정이 필요하면 직접 편집할 수 있어요.'}
         </p>
 
         {aiError && (
@@ -102,48 +117,52 @@ export default function PlanPage() {
           </div>
         )}
 
-        {isPlanEditing && (project.screens.length > 0 || project.generatedApp) && (
+        {!isComparing && isPlanEditing && hasDownstream && (
           <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
             기획서를 수정하면 기존 화면 목록과 미리보기를 다시 생성해야 합니다.
           </div>
         )}
 
-        {showRegenerateConfirm && (
-          <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
-            <p>기획서를 재생성하면 기존 화면 목록과 미리보기가 삭제됩니다. 계속할까요?</p>
-            <div className="mt-2 flex gap-3">
-              <button
-                onClick={handleRegenerate}
-                className="font-medium underline hover:no-underline"
-              >
-                재생성
-              </button>
-              <button
-                onClick={() => setShowRegenerateConfirm(false)}
-                className="text-amber-600 hover:text-amber-800"
-              >
-                취소
-              </button>
-            </div>
+        {isComparing ? (
+          <PlanVersionComparison
+            currentPlan={project.plan}
+            candidates={candidates}
+            hasDownstream={hasDownstream}
+            onKeepCurrent={handleKeepCurrent}
+            onSelectCandidate={handleSelectCandidate}
+          />
+        ) : (
+          <PlanViewer
+            plan={project.plan}
+            onChange={handlePlanChange}
+            onEditStart={() => setIsPlanEditing(true)}
+            onEditCancel={() => setIsPlanEditing(false)}
+          />
+        )}
+
+        {!isComparing && (
+          <div className="mt-2 flex justify-end">
+            <button
+              onClick={handleRegenerate}
+              disabled={generating}
+              className="text-xs text-gray-400 hover:text-indigo-500 transition-colors disabled:opacity-40"
+            >
+              ↻ 기획서 재생성
+            </button>
           </div>
         )}
 
-        <PlanViewer
-          plan={project.plan}
-          onChange={handlePlanChange}
-          onEditStart={() => setIsPlanEditing(true)}
-          onEditCancel={() => setIsPlanEditing(false)}
-        />
-
-        <div className="mt-2 flex justify-end">
-          <button
-            onClick={handleRegenerateClick}
-            disabled={generating}
-            className="text-xs text-gray-400 hover:text-indigo-500 transition-colors disabled:opacity-40"
-          >
-            ↻ 기획서 재생성
-          </button>
-        </div>
+        {isComparing && candidates.length < MAX_CANDIDATES && (
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={handleRegenerate}
+              disabled={generating}
+              className="text-xs text-gray-400 hover:text-indigo-500 transition-colors disabled:opacity-40"
+            >
+              ↻ 추가 버전 생성 ({candidates.length + 1}/{MAX_CANDIDATES + 1} 버전)
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 flex justify-between items-center">
           <button
@@ -152,12 +171,14 @@ export default function PlanPage() {
           >
             ← 이전
           </button>
-          <button
-            onClick={() => router.push(`/projects/${id}/screens`)}
-            className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
-          >
-            화면 목록 보기 →
-          </button>
+          {!isComparing && (
+            <button
+              onClick={() => router.push(`/projects/${id}/screens`)}
+              className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+            >
+              화면 목록 보기 →
+            </button>
+          )}
         </div>
       </div>
     </main>

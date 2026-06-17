@@ -52,13 +52,20 @@ export function clearQaAndBelow(project: Project): Project {
     ...project,
     qa: { questions: [] },
     plan: { ...EMPTY_PLAN },
+    planCandidates: [],
     screens: [],
     generatedApp: undefined,
   }
 }
 
 export function clearPlanAndBelow(project: Project): Project {
-  return { ...project, plan: { ...EMPTY_PLAN }, screens: [], generatedApp: undefined }
+  return {
+    ...project,
+    plan: { ...EMPTY_PLAN },
+    planCandidates: [],
+    screens: [],
+    generatedApp: undefined,
+  }
 }
 
 export function clearScreensAndBelow(project: Project): Project {

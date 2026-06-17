@@ -44,6 +44,7 @@ export interface AppPlan {
   targetUser: string
   coreFeatures: string[]
   techStack: string[]
+  techDescriptions?: Record<string, string>
 }
 
 import type { UISchema } from './ui-schema'
@@ -58,6 +59,7 @@ export interface Project {
   input: UserInput
   qa: QASession
   plan: AppPlan
+  planCandidates?: AppPlan[]
   screens: Screen[]
   generatedApp?: UISchema
 }

@@ -442,6 +442,69 @@ export function generateApp(plan: AppPlan): UISchema {
   }
 }
 
+function buildTechDescriptions(
+  techStack: string[],
+  coreFeatures: string[]
+): Record<string, string> {
+  const result: Record<string, string> = {}
+  const top2 = coreFeatures.slice(0, 2).join(', ')
+
+  for (const tech of techStack) {
+    const t = tech.toLowerCase()
+
+    if (
+      t.includes('react native') ||
+      t.includes('flutter') ||
+      t.includes('swift') ||
+      t.includes('kotlin')
+    ) {
+      result[tech] = `모바일 앱 화면 구현에 사용 (${top2})`
+    } else if (t.includes('next') || t.includes('nuxt')) {
+      result[tech] = `웹 앱 화면 구성에 사용 (${top2} 화면 구현)`
+    } else if (
+      t.includes('react') ||
+      t.includes('vue') ||
+      t.includes('angular') ||
+      t.includes('svelte')
+    ) {
+      result[tech] = `앱 화면 구현에 사용 (${top2})`
+    } else if (
+      t.includes('node') ||
+      t.includes('express') ||
+      t.includes('fastapi') ||
+      t.includes('django') ||
+      t.includes('spring') ||
+      t.includes('flask')
+    ) {
+      const serverFeatures = coreFeatures.filter((f) =>
+        ['로그인', '회원', '인증', '검색', '알림', '결제', '저장', '관리'].some((k) =>
+          f.includes(k)
+        )
+      )
+      const featList = (serverFeatures.length > 0 ? serverFeatures : coreFeatures)
+        .slice(0, 2)
+        .join(', ')
+      result[tech] = `서버 기능 구현에 사용 (${featList})`
+    } else if (
+      ['mongodb', 'postgresql', 'mysql', 'sqlite', 'mariadb'].some((db) => t.includes(db))
+    ) {
+      result[tech] = `데이터 저장·관리에 사용 (${top2} 데이터 보관)`
+    } else if (t.includes('firebase') || t.includes('supabase')) {
+      result[tech] = `로그인·DB·스토리지 통합 제공 (${top2} 기능 지원)`
+    } else if (t.includes('redis')) {
+      result[tech] = `로그인 세션 유지 및 빠른 데이터 캐싱에 사용`
+    } else if (t.includes('tailwind') || t.includes('css')) {
+      result[tech] = `모든 화면의 디자인·스타일링에 사용`
+    } else if (t.includes('typescript') || t.includes('javascript')) {
+      result[tech] = `전체 앱 개발 기본 언어로 사용`
+    } else {
+      result[tech] = `${top2} 구현에 활용`
+    }
+  }
+
+  return result
+}
+
 export function generatePlan(project: Project): AppPlan {
   const desc = project.input.description
   const answers: Record<string, string> = {}
@@ -450,12 +513,15 @@ export function generatePlan(project: Project): AppPlan {
   })
 
   const combined = desc + ' ' + Object.values(answers).join(' ')
+  const coreFeatures = extractFeatures(combined)
+  const techStack = ['React', 'Next.js', 'Tailwind CSS']
 
   return {
     appName: generateAppName(desc),
     purpose: desc.length > 80 ? desc.slice(0, 80).trimEnd() + '…' : desc,
     targetUser: answers['q1'] || '일반 사용자',
-    coreFeatures: extractFeatures(combined),
-    techStack: ['React', 'Next.js', 'Tailwind CSS'],
+    coreFeatures,
+    techStack,
+    techDescriptions: buildTechDescriptions(techStack, coreFeatures),
   }
 }
