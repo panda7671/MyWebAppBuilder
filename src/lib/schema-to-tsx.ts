@@ -14,9 +14,19 @@ function toComponentName(name: string): string {
   return (/^\d/.test(cleaned) ? 'App' + cleaned : cleaned) || 'GeneratedApp'
 }
 
-// Wraps a user string as a safe JSX text expression e.g. {"hello"}
 function jxt(s: string): string {
   return `{${JSON.stringify(s)}}`
+}
+
+function toAppSlug(appName: string): string {
+  return (
+    appName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')
+      .slice(0, 20) || 'app'
+  )
 }
 
 type SectionCode = {
@@ -104,7 +114,7 @@ function cardGridCode(s: CardGridSection, idx: number): SectionCode {
     `        {${constName}.map((card, i) => (`,
     '          <button',
     '            key={i}',
-    '            onClick={() => setSelectedIdx(i === selectedIdx ? null : i)}',
+    '            onClick={() => setSelectedIdx(i)}',
     '            style={{',
     "              background: 'white',",
     '              borderRadius: 12,',
@@ -143,6 +153,57 @@ function cardGridCode(s: CardGridSection, idx: number): SectionCode {
     '          </button>',
     '        ))}',
     '      </div>',
+    '      {selectedIdx !== null && (',
+    '        <div',
+    '          onClick={() => setSelectedIdx(null)}',
+    '          style={{',
+    "            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',",
+    "            zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',",
+    '            padding: 16,',
+    '          }}',
+    '        >',
+    '          <div',
+    '            onClick={e => e.stopPropagation()}',
+    '            style={{',
+    "              background: 'white', borderRadius: 16, padding: 24,",
+    "              width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.3)',",
+    '            }}',
+    '          >',
+    "            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>",
+    "              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1f2937', margin: 0, flex: 1 }}>",
+    `                {${constName}[selectedIdx].title}`,
+    '              </h3>',
+    '              <button',
+    '                onClick={() => setSelectedIdx(null)}',
+    '                style={{',
+    "                  background: 'none', border: 'none', cursor: 'pointer',",
+    "                  fontSize: 22, color: '#9ca3af', lineHeight: 1, padding: '0 0 0 12px', flexShrink: 0,",
+    '                }}',
+    '              >',
+    '                ×',
+    '              </button>',
+    '            </div>',
+    `            {${constName}[selectedIdx].badge && (`,
+    '              <span',
+    '                style={{',
+    '                  color: PRIMARY_COLOR, background: `${PRIMARY_COLOR}18`,',
+    "                  fontSize: 12, fontWeight: 600, padding: '3px 10px',",
+    "                  borderRadius: 9999, display: 'inline-block', marginBottom: 12,",
+    '                }}',
+    '              >',
+    `                {${constName}[selectedIdx].badge}`,
+    '              </span>',
+    '            )}',
+    `            {${constName}[selectedIdx].description ? (`,
+    "              <p style={{ fontSize: 14, color: '#6b7280', margin: 0, lineHeight: 1.7 }}>",
+    `                {${constName}[selectedIdx].description}`,
+    '              </p>',
+    '            ) : (',
+    "              <p style={{ fontSize: 14, color: '#9ca3af', margin: 0 }}>상세 설명이 없습니다.</p>",
+    '            )}',
+    '          </div>',
+    '        </div>',
+    '      )}',
     '    </section>',
     '  )',
     '}'
@@ -244,6 +305,43 @@ function listCode(s: ListSection, idx: number): SectionCode {
     '          </button>',
     '        ))}',
     '      </div>',
+    '      {selectedIdx !== null && (',
+    '        <div',
+    '          style={{',
+    '            marginTop: 10,',
+    "            background: 'white',",
+    '            borderRadius: 12,',
+    "            padding: '14px 16px',",
+    "            border: `1px solid ${PRIMARY_COLOR}40`,",
+    "            boxShadow: `0 0 0 2px ${PRIMARY_COLOR}18`,",
+    '          }}',
+    '        >',
+    "          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>",
+    "            <p style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', margin: 0 }}>",
+    `              {${constName}[selectedIdx].title}`,
+    '            </p>',
+    '            <button',
+    '              onClick={() => setSelectedIdx(null)}',
+    '              style={{',
+    "                background: 'none', border: 'none', cursor: 'pointer',",
+    "                fontSize: 18, color: '#9ca3af', lineHeight: 1, padding: '0 0 0 8px',",
+    '              }}',
+    '            >',
+    '              ×',
+    '            </button>',
+    '          </div>',
+    `          {${constName}[selectedIdx].subtitle && (`,
+    "            <p style={{ fontSize: 13, color: '#6b7280', margin: '4px 0 0' }}>",
+    `              {${constName}[selectedIdx].subtitle}`,
+    '            </p>',
+    '          )}',
+    `          {${constName}[selectedIdx].meta && (`,
+    "            <p style={{ fontSize: 12, color: '#9ca3af', margin: '4px 0 0' }}>",
+    `              {${constName}[selectedIdx].meta}`,
+    '            </p>',
+    '          )}',
+    '        </div>',
+    '      )}',
     '    </section>',
     '  )',
     '}'
@@ -254,17 +352,36 @@ function listCode(s: ListSection, idx: number): SectionCode {
 
 // ─── Form ─────────────────────────────────────────────────────────────────────
 
-function formCode(s: FormSection, idx: number): SectionCode {
+function formCode(s: FormSection, idx: number, storageKey: string): SectionCode {
   const componentName = `Section${idx}_Form`
   const constName = `FORM_FIELDS_${idx}`
   const constDecl = `const ${constName}: Array<{ label: string; type: string; placeholder?: string; required?: boolean; options?: string[] }> = ${JSON.stringify(s.fields ?? [], null, 2)}`
 
   const lines: string[] = [
     `function ${componentName}() {`,
+    `  const FORM_KEY = ${JSON.stringify(storageKey)}`,
     '  const [textValues, setTextValues] = useState<Record<string, string>>({})',
     '  const [toggleValues, setToggleValues] = useState<Record<string, boolean>>({})',
+    '  const [savedItems, setSavedItems] = useState<Array<Record<string, string>>>(() => {',
+    "    if (typeof window === 'undefined') return []",
+    "    try { return JSON.parse(localStorage.getItem(FORM_KEY) || '[]') } catch { return [] }",
+    '  })',
+    '  const [saved, setSaved] = useState(false)',
     '  const setVal = (label: string, v: string) => setTextValues(p => ({ ...p, [label]: v }))',
     '  const flipToggle = (label: string) => setToggleValues(p => ({ ...p, [label]: !p[label] }))',
+    '  const handleSubmit = () => {',
+    '    const entry: Record<string, string> = {}',
+    `    ${constName}.forEach(f => {`,
+    "      entry[f.label] = f.type === 'toggle' ? (toggleValues[f.label] ? '켜짐' : '꺼짐') : (textValues[f.label] ?? '')",
+    '    })',
+    '    const next = [...savedItems, entry]',
+    '    setSavedItems(next)',
+    '    localStorage.setItem(FORM_KEY, JSON.stringify(next))',
+    '    setTextValues({})',
+    '    setToggleValues({})',
+    '    setSaved(true)',
+    '    setTimeout(() => setSaved(false), 2000)',
+    '  }',
     '  return (',
     '    <section',
     '      style={{',
@@ -389,7 +506,7 @@ function formCode(s: FormSection, idx: number): SectionCode {
     '        ))}',
     '      </div>',
     '      <button',
-    "        onClick={() => alert('저장되었습니다 ✓')}",
+    '        onClick={handleSubmit}',
     '        style={{',
     "          width: '100%',",
     '          background: PRIMARY_COLOR,',
@@ -405,6 +522,52 @@ function formCode(s: FormSection, idx: number): SectionCode {
     '      >',
     `        ${jxt(s.submitText ?? '제출')}`,
     '      </button>',
+    '      {saved && (',
+    '        <div',
+    '          style={{',
+    '            marginTop: 12,',
+    "            padding: '10px 14px',",
+    "            background: '#f0fdf4',",
+    "            border: '1px solid #86efac',",
+    '            borderRadius: 10,',
+    '            fontSize: 13,',
+    "            color: '#15803d',",
+    '            fontWeight: 500,',
+    '          }}',
+    '        >',
+    '          저장되었습니다 ✓',
+    '        </div>',
+    '      )}',
+    '      {savedItems.length > 0 && (',
+    '        <div style={{ marginTop: 20 }}>',
+    "          <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 10, fontWeight: 500 }}>",
+    '            {`저장된 항목 (${savedItems.length})`}',
+    '          </p>',
+    "          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>",
+    '            {savedItems.map((item, i) => (',
+    '              <div',
+    '                key={i}',
+    '                style={{',
+    "                  background: '#f9fafb',",
+    '                  borderRadius: 10,',
+    "                  padding: '10px 14px',",
+    "                  border: '1px solid #f3f4f6',",
+    '                }}',
+    '              >',
+    '                {Object.entries(item).map(([k, v]) => (',
+    '                  <div',
+    '                    key={k}',
+    "                    style={{ display: 'flex', gap: 8, fontSize: 12, color: '#374151', marginBottom: 3 }}",
+    '                  >',
+    "                    <span style={{ color: '#9ca3af', minWidth: 60 }}>{k}</span>",
+    "                    <span style={{ fontWeight: 500 }}>{v || '—'}</span>",
+    '                  </div>',
+    '                ))}',
+    '              </div>',
+    '            ))}',
+    '          </div>',
+    '        </div>',
+    '      )}',
     '    </section>',
     '  )',
     '}'
@@ -457,14 +620,21 @@ function detailCode(s: DetailSection, idx: number): SectionCode {
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
 
-function chatCode(s: ChatSection, idx: number): SectionCode {
+function chatCode(s: ChatSection, idx: number, storageKey: string): SectionCode {
   const componentName = `Section${idx}_Chat`
   const constName = `INITIAL_MESSAGES_${idx}`
   const constDecl = `const ${constName}: Array<{ sender: 'user' | 'bot'; text: string }> = ${JSON.stringify(s.messages ?? [], null, 2)}`
 
   const lines: string[] = [
     `function ${componentName}() {`,
-    `  const [messages, setMessages] = useState(${constName})`,
+    `  const CHAT_KEY = ${JSON.stringify(storageKey)}`,
+    "  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'bot'; text: string }>>(() => {",
+    "    if (typeof window === 'undefined') return " + constName,
+    '    try {',
+    '      const stored = localStorage.getItem(CHAT_KEY)',
+    `      return stored ? JSON.parse(stored) : ${constName}`,
+    '    } catch { return ' + constName + ' }',
+    '  })',
     "  const [input, setInput] = useState('')",
     '  const listRef = useRef<HTMLDivElement>(null)',
     '  useEffect(() => {',
@@ -473,7 +643,9 @@ function chatCode(s: ChatSection, idx: number): SectionCode {
     '  const handleSend = () => {',
     '    const text = input.trim()',
     '    if (!text) return',
-    "    setMessages(prev => [...prev, { sender: 'user', text }])",
+    "    const next = [...messages, { sender: 'user' as const, text }]",
+    '    setMessages(next)',
+    '    localStorage.setItem(CHAT_KEY, JSON.stringify(next))',
     "    setInput('')",
     '  }',
     '  return (',
@@ -584,7 +756,7 @@ function chatCode(s: ChatSection, idx: number): SectionCode {
 
 // ─── Router ───────────────────────────────────────────────────────────────────
 
-function sectionToCode(section: UISection, idx: number): SectionCode {
+function sectionToCode(section: UISection, idx: number, appSlug: string): SectionCode {
   switch (section.type) {
     case 'Hero':
       return heroCode(section, idx)
@@ -593,11 +765,11 @@ function sectionToCode(section: UISection, idx: number): SectionCode {
     case 'List':
       return listCode(section, idx)
     case 'Form':
-      return formCode(section, idx)
+      return formCode(section, idx, `mwab_${appSlug}_form_${idx}`)
     case 'Detail':
       return detailCode(section, idx)
     case 'Chat':
-      return chatCode(section, idx)
+      return chatCode(section, idx, `mwab_${appSlug}_chat_${idx}`)
     default: {
       const _exhaustive: never = section
       void _exhaustive
@@ -634,6 +806,7 @@ export function schemaToTsx(schema: UISchema): string {
   const color = schema.theme?.primaryColor ?? '#6366f1'
   const rawSections = schema.sections ?? []
   const sections: UISection[] = rawSections.length > 0 ? rawSections : makeFallbackSections(appName)
+  const appSlug = toAppSlug(appName)
 
   const needsState = sections.some(
     (s) => s.type === 'CardGrid' || s.type === 'List' || s.type === 'Form' || s.type === 'Chat'
@@ -657,7 +830,7 @@ export function schemaToTsx(schema: UISchema): string {
   const componentNames: string[] = []
 
   sections.forEach((section, idx) => {
-    const { constDecl, componentDecl, componentName } = sectionToCode(section, idx)
+    const { constDecl, componentDecl, componentName } = sectionToCode(section, idx, appSlug)
     if (constDecl) constDecls.push(constDecl)
     if (componentDecl && componentName) {
       componentDecls.push(componentDecl)
