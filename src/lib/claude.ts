@@ -2,6 +2,7 @@ import 'server-only'
 import Anthropic from '@anthropic-ai/sdk'
 import { AppPlan, Question, Screen, QASession, UIComponentType, UISchema } from '@/types'
 import type { UISection, ThemeStyle } from '@/types/ui-schema'
+import { detectAppType } from '@/lib/mock-ai'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -113,6 +114,7 @@ ${qaText}
       ? (parsed.techStack as unknown[]).filter((t): t is string => typeof t === 'string')
       : [],
     techDescriptions: Object.keys(techDescriptions).length > 0 ? techDescriptions : undefined,
+    rawDescription: description,
   }
 }
 
@@ -143,8 +145,23 @@ function normalizeSectionType(raw: unknown): UISection['type'] | null {
   return SECTION_TYPE_ALIASES[lower] ?? null
 }
 
+const APP_TYPE_HINTS: Record<string, string> = {
+  marketplace: '상품 목록(List), 상품 등록 폼(Form), 채팅(Chat) 섹션 위주로 구성하세요.',
+  finance: '통계 카드(CardGrid), 지출 입력 폼(Form), 거래 내역(List) 섹션 위주로 구성하세요.',
+  todo: '진행률 카드(CardGrid), 체크리스트(List), 할 일 추가 폼(Form) 섹션 위주로 구성하세요.',
+  booking: '예약 가능 항목(List), 예약 폼(Form), 예약 내역(List) 섹션 위주로 구성하세요.',
+  fitness: '통계 카드(CardGrid), 운동 기록(List), 기록 추가 폼(Form) 섹션 위주로 구성하세요.',
+  learning: '학습 현황 카드(CardGrid), 강의 목록(List), 학습 기록 폼(Form) 섹션 위주로 구성하세요.',
+  schedule: '일정 요약 카드(CardGrid), 일정 목록(List), 일정 추가 폼(Form) 섹션 위주로 구성하세요.',
+  food: '추천 카드(CardGrid), 맛집 목록(List), 맛집 등록 폼(Form) 섹션 위주로 구성하세요.',
+  community: '인기글 카드(CardGrid), 게시글 목록(List), 글쓰기 폼(Form) 섹션 위주로 구성하세요.',
+  default: 'Hero, CardGrid, List, Form 섹션을 적절히 구성하세요.',
+}
+
 export async function claudeGenerateApp(plan: AppPlan, screens: Screen[]): Promise<UISchema> {
   const screenNames = screens.map((s) => s.name).join(', ')
+  const appType = detectAppType(plan)
+  const appTypeHint = APP_TYPE_HINTS[appType] ?? APP_TYPE_HINTS.default
 
   const response = await client.messages.create({
     model: MODEL,
@@ -159,6 +176,7 @@ export async function claudeGenerateApp(plan: AppPlan, screens: Screen[]): Promi
 타겟 유저: "${plan.targetUser}"
 핵심 기능: ${plan.coreFeatures.join(', ')}
 화면: ${screenNames || '없음'}
+앱 유형 힌트: ${appTypeHint}
 
 아래 JSON UISchema를 생성하세요. sections의 type은 반드시 Hero, CardGrid, Form, List, Detail, Chat 중 하나여야 합니다:
 

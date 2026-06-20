@@ -45,6 +45,7 @@ export interface AppPlan {
   coreFeatures: string[]
   techStack: string[]
   techDescriptions?: Record<string, string>
+  rawDescription?: string
 }
 
 import type { UISchema } from './ui-schema'

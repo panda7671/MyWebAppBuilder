@@ -1,4 +1,5 @@
 import { AppPlan, Project, Question, Screen, UIComponent, UISchema } from '@/types'
+import type { UISection, UITheme } from '@/types/ui-schema'
 
 const DOMAIN_PLACEHOLDERS: [string[], Record<string, string>][] = [
   [
@@ -399,20 +400,415 @@ export function generateScreens(project: Project): Screen[] {
   return screens
 }
 
-export function generateApp(plan: AppPlan): UISchema {
-  const features = plan.coreFeatures.slice(0, 4)
-  const cards =
-    features.length > 0
-      ? features.map((f) => ({ title: f, description: `${plan.appName}의 핵심 기능입니다.` }))
-      : [
-          { title: '기능 1', description: '주요 기능을 소개합니다.' },
-          { title: '기능 2', description: '편리한 기능을 제공합니다.' },
-        ]
+// ─── App type detection ──────────────────────────────────────────────────────
 
-  return {
-    appName: plan.appName,
-    theme: { primaryColor: '#4F46E5', style: 'minimal' },
-    sections: [
+type AppType =
+  | 'marketplace'
+  | 'finance'
+  | 'todo'
+  | 'booking'
+  | 'fitness'
+  | 'learning'
+  | 'schedule'
+  | 'food'
+  | 'community'
+  | 'default'
+
+const APP_TYPE_KEYWORDS: [string[], AppType][] = [
+  [['중고', '장터', '중고거래', '마켓'], 'marketplace'],
+  [['가계부', '지출', '예산', '저축', '수입지출'], 'finance'],
+  [['할일', '할 일', '체크리스트', '루틴', '습관', '투두'], 'todo'],
+  [['예약', '예약하기', '예약관리'], 'booking'],
+  [['운동', '헬스', '피트니스', '다이어트'], 'fitness'],
+  [['공부', '학습', '강의', '교육', '과제', '수업'], 'learning'],
+  [['일정', '스케줄', '캘린더', '시간표'], 'schedule'],
+  [['음식', '맛집', '배달', '식당', '카페', '레스토랑'], 'food'],
+  [['커뮤니티', '게시판', '동네', '이웃', '주민', '소통'], 'community'],
+]
+
+export function detectAppType(plan: AppPlan): AppType {
+  const text = [
+    plan.rawDescription ?? plan.purpose,
+    plan.appName,
+    ...plan.coreFeatures,
+  ].join(' ')
+
+  for (const [keywords, appType] of APP_TYPE_KEYWORDS) {
+    if (keywords.some((k) => text.includes(k))) return appType
+  }
+  return 'default'
+}
+
+const APP_TYPE_THEMES: Record<AppType, UITheme> = {
+  marketplace: { primaryColor: '#10B981', style: 'minimal' },
+  finance: { primaryColor: '#059669', style: 'minimal' },
+  todo: { primaryColor: '#8B5CF6', style: 'minimal' },
+  booking: { primaryColor: '#3B82F6', style: 'minimal' },
+  fitness: { primaryColor: '#F97316', style: 'dark' },
+  learning: { primaryColor: '#6366F1', style: 'minimal' },
+  schedule: { primaryColor: '#0EA5E9', style: 'minimal' },
+  food: { primaryColor: '#EF4444', style: 'colorful' },
+  community: { primaryColor: '#F59E0B', style: 'minimal' },
+  default: { primaryColor: '#4F46E5', style: 'minimal' },
+}
+
+type SectionBuilder = (plan: AppPlan) => UISection[]
+
+const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
+  marketplace: (plan) => [
+    {
+      type: 'Hero',
+      title: `${plan.appName}에서 사고팔아요`,
+      subtitle: plan.purpose,
+      ctaText: '물건 보러가기',
+    },
+    {
+      type: 'List',
+      title: '최근 올라온 상품',
+      items: [
+        { title: '아이폰 13 Pro 128GB', subtitle: '상태: 최상', meta: '서울 강남구', badge: '판매중' },
+        { title: '나이키 에어맥스 270', subtitle: '상태: 상', meta: '서울 마포구', badge: '판매중' },
+        { title: '삼성 갤럭시북 노트북', subtitle: '상태: 중', meta: '경기 성남시', badge: '예약중' },
+      ],
+    },
+    {
+      type: 'Form',
+      title: '상품 등록',
+      fields: [
+        { label: '상품명', type: 'text', placeholder: '판매할 물건 이름을 입력하세요', required: true },
+        { label: '가격', type: 'text', placeholder: '₩ 희망 가격', required: true },
+        { label: '카테고리', type: 'select', options: ['전자기기', '의류/잡화', '가구/인테리어', '도서', '기타'] },
+        { label: '상품 설명', type: 'textarea', placeholder: '상품 상태와 특이사항을 설명해주세요' },
+      ],
+      submitText: '등록하기',
+    },
+    {
+      type: 'Chat',
+      title: '판매자와 채팅',
+      messages: [
+        { sender: 'bot', text: '안녕하세요! 상품에 관심이 있으신가요?' },
+        { sender: 'user', text: '네, 직거래 가능한가요?' },
+        { sender: 'bot', text: '네, 강남역 근처에서 가능합니다.' },
+      ],
+      inputPlaceholder: '메시지를 입력하세요',
+    },
+  ],
+
+  finance: (plan) => [
+    {
+      type: 'Hero',
+      title: `${plan.appName}으로 지출을 관리해요`,
+      subtitle: plan.purpose,
+      ctaText: '기록하기',
+    },
+    {
+      type: 'CardGrid',
+      title: '이번 달 현황',
+      cards: [
+        { title: '총 지출', description: '₩ 850,000', badge: '이번달' },
+        { title: '예산 잔액', description: '₩ 150,000', badge: '남은 예산' },
+        { title: '최다 카테고리', description: '식비 45%', badge: 'TOP' },
+      ],
+    },
+    {
+      type: 'Form',
+      title: '지출 입력',
+      fields: [
+        { label: '금액', type: 'text', placeholder: '₩ 지출 금액', required: true },
+        { label: '카테고리', type: 'select', options: ['식비', '교통', '쇼핑', '의료', '문화', '기타'], required: true },
+        { label: '날짜', type: 'text', placeholder: 'YYYY-MM-DD', required: true },
+        { label: '메모', type: 'textarea', placeholder: '어디에 썼나요?' },
+      ],
+      submitText: '저장하기',
+    },
+    {
+      type: 'List',
+      title: '최근 거래 내역',
+      items: [
+        { title: '스타벅스 아메리카노', subtitle: '식비', meta: '01/15', badge: '-5,500원' },
+        { title: '지하철 정기권', subtitle: '교통', meta: '01/14', badge: '-55,000원' },
+        { title: '마켓컬리', subtitle: '식비', meta: '01/13', badge: '-32,400원' },
+      ],
+    },
+  ],
+
+  todo: (plan) => [
+    {
+      type: 'Hero',
+      title: `${plan.appName}으로 목표를 달성해요`,
+      subtitle: plan.purpose,
+      ctaText: '시작하기',
+    },
+    {
+      type: 'CardGrid',
+      title: '오늘의 현황',
+      cards: [
+        { title: '완료율', description: '3 / 5 달성', badge: '60%' },
+        { title: '연속 달성', description: '7일째 지속 중', badge: '🔥' },
+        { title: '이번 주', description: '5 / 7 완료', badge: 'GOOD' },
+      ],
+    },
+    {
+      type: 'List',
+      title: '오늘 할 일',
+      items: [
+        { title: '아침 운동 30분', subtitle: '매일 반복', meta: '오전 7:00', badge: '완료' },
+        { title: '책 읽기 20페이지', subtitle: '매일 반복', meta: '오전 8:00', badge: '진행중' },
+        { title: '영어 단어 30개', subtitle: '평일 반복', meta: '오후 12:00', badge: '대기' },
+      ],
+    },
+    {
+      type: 'Form',
+      title: '새 할 일 추가',
+      fields: [
+        { label: '제목', type: 'text', placeholder: '해야 할 일을 입력하세요', required: true },
+        { label: '카테고리', type: 'select', options: ['건강', '학습', '업무', '취미', '기타'] },
+        { label: '마감일', type: 'text', placeholder: 'YYYY-MM-DD' },
+        { label: '매일 반복', type: 'toggle' },
+      ],
+      submitText: '추가하기',
+    },
+  ],
+
+  booking: (plan) => [
+    {
+      type: 'Hero',
+      title: `${plan.appName}으로 간편하게 예약하세요`,
+      subtitle: plan.purpose,
+      ctaText: '예약하기',
+    },
+    {
+      type: 'List',
+      title: '예약 가능한 항목',
+      items: [
+        { title: '오전 세션', subtitle: '09:00 ~ 12:00', meta: '잔여 3석', badge: '예약가능' },
+        { title: '오후 세션', subtitle: '13:00 ~ 17:00', meta: '잔여 1석', badge: '마감임박' },
+        { title: '저녁 세션', subtitle: '18:00 ~ 21:00', meta: '잔여 5석', badge: '예약가능' },
+      ],
+    },
+    {
+      type: 'Form',
+      title: '예약 신청',
+      fields: [
+        { label: '날짜', type: 'text', placeholder: 'YYYY-MM-DD', required: true },
+        { label: '시간', type: 'select', options: ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00'], required: true },
+        { label: '이름', type: 'text', placeholder: '예약자 이름', required: true },
+        { label: '연락처', type: 'text', placeholder: '010-0000-0000', required: true },
+        { label: '메모', type: 'textarea', placeholder: '특이사항이 있으면 알려주세요' },
+      ],
+      submitText: '예약하기',
+    },
+    {
+      type: 'List',
+      title: '내 예약 내역',
+      items: [
+        { title: '오전 세션 예약', subtitle: '2024.01.20 09:00', meta: '확인 완료', badge: '예약됨' },
+        { title: '저녁 세션 예약', subtitle: '2024.01.18 18:00', meta: '이용 완료', badge: '완료' },
+      ],
+    },
+  ],
+
+  fitness: (plan) => [
+    {
+      type: 'Hero',
+      title: `${plan.appName}으로 운동을 기록해요`,
+      subtitle: plan.purpose,
+      ctaText: '운동 시작',
+    },
+    {
+      type: 'CardGrid',
+      title: '이번 주 현황',
+      cards: [
+        { title: '운동 일수', description: '3일 / 5일 목표', badge: '60%' },
+        { title: '총 운동 시간', description: '4시간 30분', badge: '이번주' },
+        { title: '소모 칼로리', description: '1,850 kcal', badge: '🔥' },
+      ],
+    },
+    {
+      type: 'List',
+      title: '최근 운동 기록',
+      items: [
+        { title: '벤치프레스', subtitle: '3세트 × 10회 · 60kg', meta: '오늘', badge: '완료' },
+        { title: '스쿼트', subtitle: '4세트 × 12회 · 70kg', meta: '어제', badge: '완료' },
+        { title: '러닝', subtitle: '5.2km · 32분', meta: '2일 전', badge: '완료' },
+      ],
+    },
+    {
+      type: 'Form',
+      title: '운동 기록 추가',
+      fields: [
+        { label: '운동 종목', type: 'text', placeholder: '예: 벤치프레스, 스쿼트, 러닝', required: true },
+        { label: '세트 수', type: 'text', placeholder: '예: 3세트' },
+        { label: '무게 / 횟수', type: 'text', placeholder: '예: 60kg × 10회' },
+        { label: '메모', type: 'textarea', placeholder: '오늘 컨디션이나 특이사항을 남겨요' },
+      ],
+      submitText: '기록하기',
+    },
+  ],
+
+  learning: (plan) => [
+    {
+      type: 'Hero',
+      title: `${plan.appName}으로 성장해요`,
+      subtitle: plan.purpose,
+      ctaText: '학습 시작',
+    },
+    {
+      type: 'CardGrid',
+      title: '학습 현황',
+      cards: [
+        { title: '오늘 학습 시간', description: '2시간 15분', badge: '오늘' },
+        { title: '완료 강의', description: '8 / 24개', badge: '33%' },
+        { title: '연속 학습', description: '12일째', badge: '🎯' },
+      ],
+    },
+    {
+      type: 'List',
+      title: '강의 목록',
+      items: [
+        { title: 'Chapter 3. 핵심 개념', subtitle: '진행률 65%', meta: '마지막 학습: 어제', badge: '진행중' },
+        { title: 'Chapter 2. 기초 이론', subtitle: '완료', meta: '지난주', badge: '완료' },
+        { title: 'Chapter 4. 실전 연습', subtitle: '진행률 0%', meta: '예정', badge: '대기' },
+      ],
+    },
+    {
+      type: 'Form',
+      title: '학습 기록',
+      fields: [
+        { label: '과목 / 주제', type: 'text', placeholder: '예: 수학, 영어, 프로그래밍', required: true },
+        { label: '학습 내용', type: 'textarea', placeholder: '오늘 배운 내용을 요약해보세요' },
+        { label: '학습 시간', type: 'text', placeholder: '예: 1시간 30분' },
+        { label: '메모', type: 'textarea', placeholder: '이해가 안 되거나 다시 볼 내용' },
+      ],
+      submitText: '기록하기',
+    },
+  ],
+
+  schedule: (plan) => [
+    {
+      type: 'Hero',
+      title: `${plan.appName}으로 일정을 관리해요`,
+      subtitle: plan.purpose,
+      ctaText: '일정 보기',
+    },
+    {
+      type: 'CardGrid',
+      title: '일정 요약',
+      cards: [
+        { title: '오늘 일정', description: '3개 예정', badge: '오늘' },
+        { title: '다음 일정', description: '오후 2:00 팀 미팅', badge: '곧' },
+        { title: '이번 주', description: '7개 일정', badge: '전체' },
+      ],
+    },
+    {
+      type: 'List',
+      title: '예정 일정',
+      items: [
+        { title: '팀 미팅', subtitle: '회의실 A · 오후 2:00', meta: '오늘', badge: 'D-Day' },
+        { title: '병원 예약', subtitle: '강남 내과 · 오전 11:00', meta: '내일', badge: 'D-1' },
+        { title: '생일 파티', subtitle: '강남역 카페 · 오후 6:00', meta: '01/20', badge: 'D-5' },
+      ],
+    },
+    {
+      type: 'Form',
+      title: '일정 추가',
+      fields: [
+        { label: '제목', type: 'text', placeholder: '일정 이름을 입력하세요', required: true },
+        { label: '날짜', type: 'text', placeholder: 'YYYY-MM-DD', required: true },
+        { label: '시간', type: 'text', placeholder: '예: 14:00' },
+        { label: '장소', type: 'text', placeholder: '장소를 입력하세요' },
+        { label: '메모', type: 'textarea', placeholder: '추가 메모' },
+      ],
+      submitText: '저장하기',
+    },
+  ],
+
+  food: (plan) => [
+    {
+      type: 'Hero',
+      title: `${plan.appName}에서 맛집을 발견해요`,
+      subtitle: plan.purpose,
+      ctaText: '맛집 보기',
+    },
+    {
+      type: 'CardGrid',
+      title: '오늘의 추천',
+      cards: [
+        { title: '한식', description: '평점 4.8 · 32개 리뷰', badge: '추천' },
+        { title: '일식', description: '평점 4.6 · 18개 리뷰', badge: '인기' },
+        { title: '카페/디저트', description: '평점 4.7 · 45개 리뷰', badge: 'HOT' },
+      ],
+    },
+    {
+      type: 'List',
+      title: '내 주변 맛집',
+      items: [
+        { title: '홍콩반점 강남점', subtitle: '중식 · 짬뽕, 짜장면', meta: '500m', badge: '⭐ 4.8' },
+        { title: '스시 오마카세', subtitle: '일식 · 오마카세', meta: '1.2km', badge: '⭐ 4.6' },
+        { title: '파리바게뜨', subtitle: '베이커리 · 빵, 케이크', meta: '300m', badge: '⭐ 4.3' },
+      ],
+    },
+    {
+      type: 'Form',
+      title: '맛집 제보',
+      fields: [
+        { label: '가게 이름', type: 'text', placeholder: '맛집 이름을 입력하세요', required: true },
+        { label: '주소', type: 'text', placeholder: '주소를 입력하세요', required: true },
+        { label: '카테고리', type: 'select', options: ['한식', '중식', '일식', '양식', '카페', '기타'] },
+        { label: '리뷰', type: 'textarea', placeholder: '맛, 분위기, 서비스를 알려주세요' },
+      ],
+      submitText: '등록하기',
+    },
+  ],
+
+  community: (plan) => [
+    {
+      type: 'Hero',
+      title: `${plan.appName}에서 이야기 나눠요`,
+      subtitle: plan.purpose,
+      ctaText: '게시글 보기',
+    },
+    {
+      type: 'CardGrid',
+      title: '인기글',
+      cards: [
+        { title: '우리 동네 맛집 추천', description: '좋아요 24 · 댓글 8', badge: 'HOT' },
+        { title: '중고 나눔합니다', description: '좋아요 18 · 댓글 12', badge: '나눔' },
+        { title: '주민센터 행사 안내', description: '좋아요 31 · 댓글 3', badge: '공지' },
+      ],
+    },
+    {
+      type: 'List',
+      title: '최신 게시글',
+      items: [
+        { title: '강아지 찾아요', subtitle: '홍길동 · 30분 전', meta: '조회 142', badge: '긴급' },
+        { title: '주차 관련 건의사항', subtitle: '이영희 · 2시간 전', meta: '조회 89', badge: 'NEW' },
+        { title: '오늘 날씨 너무 좋죠?', subtitle: '김철수 · 어제', meta: '조회 234' },
+      ],
+    },
+    {
+      type: 'Form',
+      title: '글 작성',
+      fields: [
+        { label: '제목', type: 'text', placeholder: '제목을 입력하세요', required: true },
+        { label: '내용', type: 'textarea', placeholder: '이웃들과 나누고 싶은 이야기를 적어주세요', required: true },
+        { label: '카테고리', type: 'select', options: ['자유', '정보', '나눔', '질문', '공지'] },
+        { label: '익명으로 올리기', type: 'toggle' },
+      ],
+      submitText: '올리기',
+    },
+  ],
+
+  default: (plan) => {
+    const features = plan.coreFeatures.slice(0, 4)
+    const cards =
+      features.length > 0
+        ? features.map((f) => ({ title: f, description: `${plan.appName}의 핵심 기능입니다.` }))
+        : [
+            { title: '기능 1', description: '주요 기능을 소개합니다.' },
+            { title: '기능 2', description: '편리한 기능을 제공합니다.' },
+          ]
+    return [
       {
         type: 'Hero',
         title: `${plan.appName}에 오신 것을 환영합니다`,
@@ -438,7 +834,18 @@ export function generateApp(plan: AppPlan): UISchema {
         ],
         submitText: '가입하기',
       },
-    ],
+    ]
+  },
+}
+
+// ─── App schema generation ────────────────────────────────────────────────────
+
+export function generateApp(plan: AppPlan): UISchema {
+  const appType = detectAppType(plan)
+  return {
+    appName: plan.appName,
+    theme: APP_TYPE_THEMES[appType],
+    sections: APP_TYPE_SECTION_BUILDERS[appType](plan),
   }
 }
 
@@ -523,5 +930,6 @@ export function generatePlan(project: Project): AppPlan {
     coreFeatures,
     techStack,
     techDescriptions: buildTechDescriptions(techStack, coreFeatures),
+    rawDescription: desc,
   }
 }

@@ -17,6 +17,7 @@ type IncomingPlan = {
   coreFeatures?: string[]
   features?: string[]
   techStack?: string[]
+  rawDescription?: string
 }
 
 type GenerateRequest =
@@ -36,6 +37,7 @@ function normalizePlan(raw: IncomingPlan): AppPlan {
         ? raw.features
         : [],
     techStack: Array.isArray(raw.techStack) ? raw.techStack : [],
+    rawDescription: raw.rawDescription,
   }
 }
 
