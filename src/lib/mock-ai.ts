@@ -427,11 +427,7 @@ const APP_TYPE_KEYWORDS: [string[], AppType][] = [
 ]
 
 export function detectAppType(plan: AppPlan): AppType {
-  const text = [
-    plan.rawDescription ?? plan.purpose,
-    plan.appName,
-    ...plan.coreFeatures,
-  ].join(' ')
+  const text = [plan.rawDescription ?? plan.purpose, plan.appName, ...plan.coreFeatures].join(' ')
 
   for (const [keywords, appType] of APP_TYPE_KEYWORDS) {
     if (keywords.some((k) => text.includes(k))) return appType
@@ -466,19 +462,47 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       type: 'List',
       title: '최근 올라온 상품',
       items: [
-        { title: '아이폰 13 Pro 128GB', subtitle: '상태: 최상', meta: '서울 강남구', badge: '판매중' },
-        { title: '나이키 에어맥스 270', subtitle: '상태: 상', meta: '서울 마포구', badge: '판매중' },
-        { title: '삼성 갤럭시북 노트북', subtitle: '상태: 중', meta: '경기 성남시', badge: '예약중' },
+        {
+          title: '아이폰 13 Pro 128GB',
+          subtitle: '상태: 최상',
+          meta: '서울 강남구',
+          badge: '판매중',
+        },
+        {
+          title: '나이키 에어맥스 270',
+          subtitle: '상태: 상',
+          meta: '서울 마포구',
+          badge: '판매중',
+        },
+        {
+          title: '삼성 갤럭시북 노트북',
+          subtitle: '상태: 중',
+          meta: '경기 성남시',
+          badge: '예약중',
+        },
       ],
     },
     {
       type: 'Form',
       title: '상품 등록',
       fields: [
-        { label: '상품명', type: 'text', placeholder: '판매할 물건 이름을 입력하세요', required: true },
+        {
+          label: '상품명',
+          type: 'text',
+          placeholder: '판매할 물건 이름을 입력하세요',
+          required: true,
+        },
         { label: '가격', type: 'text', placeholder: '₩ 희망 가격', required: true },
-        { label: '카테고리', type: 'select', options: ['전자기기', '의류/잡화', '가구/인테리어', '도서', '기타'] },
-        { label: '상품 설명', type: 'textarea', placeholder: '상품 상태와 특이사항을 설명해주세요' },
+        {
+          label: '카테고리',
+          type: 'select',
+          options: ['전자기기', '의류/잡화', '가구/인테리어', '도서', '기타'],
+        },
+        {
+          label: '상품 설명',
+          type: 'textarea',
+          placeholder: '상품 상태와 특이사항을 설명해주세요',
+        },
       ],
       submitText: '등록하기',
     },
@@ -515,7 +539,12 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       title: '지출 입력',
       fields: [
         { label: '금액', type: 'text', placeholder: '₩ 지출 금액', required: true },
-        { label: '카테고리', type: 'select', options: ['식비', '교통', '쇼핑', '의료', '문화', '기타'], required: true },
+        {
+          label: '카테고리',
+          type: 'select',
+          options: ['식비', '교통', '쇼핑', '의료', '문화', '기타'],
+          required: true,
+        },
         { label: '날짜', type: 'text', placeholder: 'YYYY-MM-DD', required: true },
         { label: '메모', type: 'textarea', placeholder: '어디에 썼나요?' },
       ],
@@ -591,7 +620,12 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       title: '예약 신청',
       fields: [
         { label: '날짜', type: 'text', placeholder: 'YYYY-MM-DD', required: true },
-        { label: '시간', type: 'select', options: ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00'], required: true },
+        {
+          label: '시간',
+          type: 'select',
+          options: ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00'],
+          required: true,
+        },
         { label: '이름', type: 'text', placeholder: '예약자 이름', required: true },
         { label: '연락처', type: 'text', placeholder: '010-0000-0000', required: true },
         { label: '메모', type: 'textarea', placeholder: '특이사항이 있으면 알려주세요' },
@@ -602,7 +636,12 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       type: 'List',
       title: '내 예약 내역',
       items: [
-        { title: '오전 세션 예약', subtitle: '2024.01.20 09:00', meta: '확인 완료', badge: '예약됨' },
+        {
+          title: '오전 세션 예약',
+          subtitle: '2024.01.20 09:00',
+          meta: '확인 완료',
+          badge: '예약됨',
+        },
         { title: '저녁 세션 예약', subtitle: '2024.01.18 18:00', meta: '이용 완료', badge: '완료' },
       ],
     },
@@ -637,7 +676,12 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       type: 'Form',
       title: '운동 기록 추가',
       fields: [
-        { label: '운동 종목', type: 'text', placeholder: '예: 벤치프레스, 스쿼트, 러닝', required: true },
+        {
+          label: '운동 종목',
+          type: 'text',
+          placeholder: '예: 벤치프레스, 스쿼트, 러닝',
+          required: true,
+        },
         { label: '세트 수', type: 'text', placeholder: '예: 3세트' },
         { label: '무게 / 횟수', type: 'text', placeholder: '예: 60kg × 10회' },
         { label: '메모', type: 'textarea', placeholder: '오늘 컨디션이나 특이사항을 남겨요' },
@@ -666,7 +710,12 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       type: 'List',
       title: '강의 목록',
       items: [
-        { title: 'Chapter 3. 핵심 개념', subtitle: '진행률 65%', meta: '마지막 학습: 어제', badge: '진행중' },
+        {
+          title: 'Chapter 3. 핵심 개념',
+          subtitle: '진행률 65%',
+          meta: '마지막 학습: 어제',
+          badge: '진행중',
+        },
         { title: 'Chapter 2. 기초 이론', subtitle: '완료', meta: '지난주', badge: '완료' },
         { title: 'Chapter 4. 실전 연습', subtitle: '진행률 0%', meta: '예정', badge: '대기' },
       ],
@@ -675,7 +724,12 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       type: 'Form',
       title: '학습 기록',
       fields: [
-        { label: '과목 / 주제', type: 'text', placeholder: '예: 수학, 영어, 프로그래밍', required: true },
+        {
+          label: '과목 / 주제',
+          type: 'text',
+          placeholder: '예: 수학, 영어, 프로그래밍',
+          required: true,
+        },
         { label: '학습 내용', type: 'textarea', placeholder: '오늘 배운 내용을 요약해보세요' },
         { label: '학습 시간', type: 'text', placeholder: '예: 1시간 30분' },
         { label: '메모', type: 'textarea', placeholder: '이해가 안 되거나 다시 볼 내용' },
@@ -743,7 +797,12 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       type: 'List',
       title: '내 주변 맛집',
       items: [
-        { title: '홍콩반점 강남점', subtitle: '중식 · 짬뽕, 짜장면', meta: '500m', badge: '⭐ 4.8' },
+        {
+          title: '홍콩반점 강남점',
+          subtitle: '중식 · 짬뽕, 짜장면',
+          meta: '500m',
+          badge: '⭐ 4.8',
+        },
         { title: '스시 오마카세', subtitle: '일식 · 오마카세', meta: '1.2km', badge: '⭐ 4.6' },
         { title: '파리바게뜨', subtitle: '베이커리 · 빵, 케이크', meta: '300m', badge: '⭐ 4.3' },
       ],
@@ -754,7 +813,11 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       fields: [
         { label: '가게 이름', type: 'text', placeholder: '맛집 이름을 입력하세요', required: true },
         { label: '주소', type: 'text', placeholder: '주소를 입력하세요', required: true },
-        { label: '카테고리', type: 'select', options: ['한식', '중식', '일식', '양식', '카페', '기타'] },
+        {
+          label: '카테고리',
+          type: 'select',
+          options: ['한식', '중식', '일식', '양식', '카페', '기타'],
+        },
         { label: '리뷰', type: 'textarea', placeholder: '맛, 분위기, 서비스를 알려주세요' },
       ],
       submitText: '등록하기',
@@ -782,7 +845,12 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       title: '최신 게시글',
       items: [
         { title: '강아지 찾아요', subtitle: '홍길동 · 30분 전', meta: '조회 142', badge: '긴급' },
-        { title: '주차 관련 건의사항', subtitle: '이영희 · 2시간 전', meta: '조회 89', badge: 'NEW' },
+        {
+          title: '주차 관련 건의사항',
+          subtitle: '이영희 · 2시간 전',
+          meta: '조회 89',
+          badge: 'NEW',
+        },
         { title: '오늘 날씨 너무 좋죠?', subtitle: '김철수 · 어제', meta: '조회 234' },
       ],
     },
@@ -791,7 +859,12 @@ const APP_TYPE_SECTION_BUILDERS: Record<AppType, SectionBuilder> = {
       title: '글 작성',
       fields: [
         { label: '제목', type: 'text', placeholder: '제목을 입력하세요', required: true },
-        { label: '내용', type: 'textarea', placeholder: '이웃들과 나누고 싶은 이야기를 적어주세요', required: true },
+        {
+          label: '내용',
+          type: 'textarea',
+          placeholder: '이웃들과 나누고 싶은 이야기를 적어주세요',
+          required: true,
+        },
         { label: '카테고리', type: 'select', options: ['자유', '정보', '나눔', '질문', '공지'] },
         { label: '익명으로 올리기', type: 'toggle' },
       ],
